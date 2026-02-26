@@ -1,0 +1,2568 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APEX — Professional Trading Bot Platform</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+:root{
+  --bg:#05080d;--s1:#090e16;--s2:#0d1520;--s3:#111d2e;
+  --b1:#182334;--b2:#1e2d42;--b3:#243550;
+  --cyan:#00d4ff;--cyan2:#0099cc;--cyan-glow:rgba(0,212,255,0.15);
+  --green:#00e676;--green2:#00b359;--green-glow:rgba(0,230,118,0.12);
+  --red:#ff3d6b;--red2:#cc2244;--red-glow:rgba(255,61,107,0.12);
+  --yellow:#ffc107;--orange:#ff6d00;--purple:#7c4dff;
+  --text:#e8f4fd;--text2:#8ba8c4;--text3:#4a6a8a;
+  --mono:'JetBrains Mono',monospace;--sans:'Outfit',sans-serif;
+  --r4:4px;--r8:8px;--r12:12px;--r16:16px;--r24:24px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+
+/* LAYOUT */
+#app{display:flex;height:100vh;overflow:hidden}
+#sidebar{width:200px;min-width:200px;background:var(–s1);border-right:1px solid var(–b1);display:flex;flex-direction:column;z-index:100}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#topbar{height:52px;background:var(–s1);border-bottom:1px solid var(–b1);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0}
+#content{flex:1;overflow-y:auto;overflow-x:hidden}
+
+/* SIDEBAR */
+.sb-logo{padding:18px 16px 14px;border-bottom:1px solid var(–b1)}
+.sb-logo .name{font-family:var(–sans);font-weight:900;font-size:20px;letter-spacing:-0.5px;background:linear-gradient(135deg,var(–cyan),var(–purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sb-logo .sub{font-family:var(–mono);font-size:9px;color:var(–text3);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.sb-mode{margin:10px 10px 6px;display:flex;background:var(–bg);border:1px solid var(–b1);border-radius:var(–r8);padding:3px;gap:2px}
+.sb-mode button{flex:1;padding:5px 4px;border:none;border-radius:5px;font-family:var(–mono);font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:.2s;background:transparent;color:var(–text3)}
+.sb-mode button.active{background:var(–cyan);color:#000}
+nav{flex:1;padding:8px 0;overflow-y:auto}
+.nav-i{display:flex;align-items:center;gap:10px;padding:9px 14px;color:var(–text3);font-size:13px;font-weight:500;cursor:pointer;transition:.15s;border-left:2px solid transparent;position:relative}
+.nav-i:hover{color:var(–text);background:rgba(255,255,255,.03)}
+.nav-i.active{color:var(–cyan);border-left-color:var(–cyan);background:var(–cyan-glow)}
+.nav-i .ico{font-size:15px;width:18px;text-align:center}
+.nav-i .badge{margin-left:auto;background:var(–red);color:#fff;border-radius:10px;padding:1px 6px;font-size:9px;font-family:var(–mono);font-weight:700}
+.sb-bottom{padding:10px;border-top:1px solid var(–b1)}
+.portfolio-mini{background:var(–bg);border:1px solid var(–b1);border-radius:var(–r8);padding:10px;margin-bottom:8px}
+.pm-label{font-family:var(–mono);font-size:9px;color:var(–text3);text-transform:uppercase;letter-spacing:1px}
+.pm-val{font-family:var(–mono);font-size:22px;font-weight:700;color:var(–green);line-height:1.2}
+.pm-chg{font-family:var(–mono);font-size:10px}
+
+/* TOPBAR */
+.tb-title{font-weight:700;font-size:16px;flex:1}
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;font-family:var(–mono);font-size:10px;font-weight:700;letter-spacing:.5px;border:1px solid}
+.status-pill.live{border-color:rgba(0,230,118,.3);background:var(–green-glow);color:var(–green)}
+.status-pill.demo{border-color:rgba(255,193,7,.3);background:rgba(255,193,7,.08);color:var(–yellow)}
+.status-pill.stopped{border-color:rgba(255,61,107,.3);background:var(–red-glow);color:var(–red)}
+.status-dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 1.5s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.ticker-strip{display:flex;gap:16px;overflow:hidden;font-family:var(–mono);font-size:11px;margin:0 8px}
+.tick-item{display:flex;gap:6px;white-space:nowrap}
+.tick-sym{color:var(–text3)}
+.tick-up{color:var(–green)}
+.tick-dn{color:var(–red)}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 14px;border-radius:var(–r8);border:none;font-family:var(–sans);font-weight:600;font-size:12px;cursor:pointer;transition:.2s;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn-cyan{background:linear-gradient(135deg,var(–cyan),var(–cyan2));color:#000}
+.btn-cyan:hover{box-shadow:0 4px 16px rgba(0,212,255,.3)}
+.btn-green{background:linear-gradient(135deg,var(–green),var(–green2));color:#000}
+.btn-green:hover{box-shadow:0 4px 16px rgba(0,230,118,.3)}
+.btn-red{background:linear-gradient(135deg,var(–red),var(–red2));color:#fff}
+.btn-ghost{background:transparent;color:var(–text2);border:1px solid var(–b2)}
+.btn-ghost:hover{border-color:var(–cyan);color:var(–cyan)}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-xs{padding:3px 8px;font-size:10px}
+.btn-full{width:100%}
+.btn-yellow{background:linear-gradient(135deg,var(–yellow),var(–orange));color:#000}
+
+/* CARDS */
+.card{background:var(–s2);border:1px solid var(–b1);border-radius:var(–r12);padding:16px}
+.card-sm{padding:12px}
+.card-title{font-family:var(–mono);font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(–text3);margin-bottom:12px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+
+/* GRID LAYOUTS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.g-7-3{display:grid;grid-template-columns:1fr .43fr;gap:12px}
+
+/* STAT CARD */
+.stat{background:var(–s2);border:1px solid var(–b1);border-radius:var(–r12);padding:14px 16px}
+.stat-label{font-family:var(–mono);font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(–text3);margin-bottom:6px}
+.stat-val{font-family:var(–mono);font-size:24px;font-weight:700;line-height:1}
+.stat-sub{font-family:var(–mono);font-size:10px;margin-top:4px}
+.up{color:var(–green)}.dn{color:var(–red)}.neu{color:var(–text3)}
+
+/* PAGES */
+.page{display:none;padding:16px;min-height:100%}
+.page.active{display:block}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.page-title{font-size:20px;font-weight:800}
+
+/* FORMS */
+.field{margin-bottom:12px}
+.field label{display:block;font-family:var(–mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(–text3);margin-bottom:6px}
+input[type=text],input[type=number],input[type=email],input[type=password],select,textarea{width:100%;background:var(–bg);border:1px solid var(–b2);border-radius:var(–r8);color:var(–text);font-family:var(–mono);font-size:12px;padding:9px 12px;outline:none;transition:.2s}
+input:focus,select:focus,textarea:focus{border-color:var(–cyan)}
+select option{background:var(–s1)}
+input[type=range]{-webkit-appearance:none;width:100%;height:3px;border-radius:2px;background:var(–b2);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(–cyan);cursor:pointer;box-shadow:0 0 6px rgba(0,212,255,.5)}
+.toggle{width:40px;height:22px;background:var(–b2);border-radius:11px;cursor:pointer;position:relative;transition:.2s;flex-shrink:0}
+.toggle.on{background:var(–cyan)}
+.toggle::after{content:’’;position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}
+.toggle.on::after{left:21px}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse}
+th{font-family:var(–mono);font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(–text3);padding:8px 12px;text-align:left;border-bottom:1px solid var(–b1)}
+td{padding:9px 12px;font-size:12px;font-family:var(–mono);border-bottom:1px solid rgba(24,35,52,.5)}
+tr:hover td{background:rgba(255,255,255,.015)}
+.badge{display:inline-flex;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.5px;font-family:var(–mono)}
+.badge-long{background:rgba(0,230,118,.12);color:var(–green);border:1px solid rgba(0,230,118,.2)}
+.badge-short{background:rgba(255,61,107,.12);color:var(–red);border:1px solid rgba(255,61,107,.2)}
+.badge-open{background:rgba(0,212,255,.1);color:var(–cyan);border:1px solid rgba(0,212,255,.2)}
+.badge-closed{background:rgba(74,106,138,.1);color:var(–text3);border:1px solid var(–b1)}
+.badge-pending{background:rgba(255,193,7,.1);color:var(–yellow);border:1px solid rgba(255,193,7,.2)}
+.badge-dca{background:rgba(124,77,255,.12);color:var(–purple);border:1px solid rgba(124,77,255,.2)}
+.badge-grid{background:rgba(255,109,0,.12);color:var(–orange);border:1px solid rgba(255,109,0,.2)}
+.badge-scalp{background:rgba(0,212,255,.12);color:var(–cyan);border:1px solid rgba(0,212,255,.2)}
+
+/* CANVAS CHARTS */
+.chart-wrap{position:relative;width:100%;background:var(–bg);border-radius:var(–r8);overflow:hidden}
+canvas{display:block}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(–s1);border:1px solid var(–b2);border-radius:var(–r16);padding:28px;max-width:520px;width:100%;position:relative;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal h3{font-size:18px;font-weight:800;margin-bottom:6px}
+.modal p{font-size:13px;color:var(–text2);margin-bottom:18px;line-height:1.6}
+.modal-close{position:absolute;top:14px;right:14px;background:var(–s3);border:1px solid var(–b2);color:var(–text3);border-radius:var(–r4);padding:4px 8px;cursor:pointer;font-size:13px}
+.modal-close:hover{color:var(–text)}
+
+/* TOAST */
+#toasts{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(–s2);border:1px solid var(–b2);border-radius:var(–r8);padding:10px 14px;font-size:12px;max-width:300px;display:flex;align-items:center;gap:8px;animation:slideUp .3s ease;border-left:3px solid var(–cyan)}
+.toast.ok{border-left-color:var(–green)}.toast.err{border-left-color:var(–red)}.toast.warn{border-left-color:var(–yellow)}
+
+/* INFO BOX */
+.info-box{background:var(–cyan-glow);border:1px solid rgba(0,212,255,.15);border-radius:var(–r8);padding:10px 12px;font-size:12px;line-height:1.6;margin-bottom:12px;color:var(–text2)}
+.info-box.warn{background:rgba(255,193,7,.06);border-color:rgba(255,193,7,.2)}
+.info-box.danger{background:var(–red-glow);border-color:rgba(255,61,107,.2)}
+
+/* RISK LEVELS */
+.risk-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+.risk-card{background:var(–bg);border:2px solid var(–b1);border-radius:var(–r8);padding:10px 6px;text-align:center;cursor:pointer;transition:.2s}
+.risk-card:hover,.risk-card.sel{border-color:var(–cyan);background:var(–cyan-glow)}
+.risk-card .re{font-size:20px;margin-bottom:4px}
+.risk-card .rl{font-size:11px;font-weight:700;margin-bottom:2px}
+.risk-card .rs{font-size:9px;color:var(–text3);font-family:var(–mono)}
+
+/* INDICATOR PANEL */
+.ind-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(24,35,52,.5)}
+.ind-name{font-family:var(–mono);font-size:10px;color:var(–text3)}
+.ind-val{font-family:var(–mono);font-size:12px;font-weight:700}
+.ind-sig{font-family:var(–mono);font-size:9px;padding:2px 6px;border-radius:3px;font-weight:700}
+.sig-buy{background:rgba(0,230,118,.15);color:var(–green)}
+.sig-sell{background:rgba(255,61,107,.15);color:var(–red)}
+.sig-neu{background:rgba(74,106,138,.15);color:var(–text3)}
+
+/* AI CHAT */
+#ai-chat-page{display:flex;flex-direction:column;height:100%}
+.chat-area{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.msg-wrap{display:flex;gap:8px;max-width:85%}
+.msg-wrap.user{flex-direction:row-reverse;align-self:flex-end}
+.msg-wrap.ai{align-self:flex-start}
+.msg-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.msg-wrap.ai .msg-av{background:linear-gradient(135deg,var(–cyan),var(–purple))}
+.msg-wrap.user .msg-av{background:var(–s3);border:1px solid var(–b2)}
+.msg-bubble{padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6}
+.msg-wrap.ai .msg-bubble{background:var(–s2);border:1px solid var(–b1);border-bottom-left-radius:3px}
+.msg-wrap.user .msg-bubble{background:var(–cyan-glow);border:1px solid rgba(0,212,255,.2);border-bottom-right-radius:3px}
+.msg-bubble strong{color:var(–cyan)}
+.chat-input-row{padding:10px 14px;background:var(–s1);border-top:1px solid var(–b1);display:flex;gap:8px}
+.chat-input-row textarea{flex:1;resize:none;height:42px;font-family:var(–sans);font-size:13px;border-radius:var(–r8)}
+.quick-chips{padding:6px 14px;background:var(–s1);border-top:1px solid var(–b1);display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:4px 10px;background:var(–bg);border:1px solid var(–b2);border-radius:20px;font-size:11px;font-family:var(–mono);cursor:pointer;transition:.15s;white-space:nowrap}
+.chip:hover{border-color:var(–cyan);color:var(–cyan)}
+
+/* BACKTESTING */
+.bt-results{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+
+/* TABS */
+.tabs{display:flex;gap:2px;background:var(–bg);border:1px solid var(–b1);border-radius:var(–r8);padding:3px;width:fit-content;margin-bottom:14px}
+.tab{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;color:var(–text3);transition:.15s}
+.tab.active{background:var(–s2);color:var(–text)}
+
+/* STRATEGY MODE CARDS */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.mode-card{background:var(–bg);border:2px solid var(–b1);border-radius:var(–r12);padding:14px;cursor:pointer;transition:.2s}
+.mode-card.sel,.mode-card:hover{border-color:var(–cyan);background:var(–cyan-glow)}
+.mode-card .mi{font-size:24px;margin-bottom:6px}
+.mode-card .ml{font-weight:700;font-size:13px;margin-bottom:3px}
+.mode-card .ms{font-size:11px;color:var(–text2);line-height:1.5}
+
+/* PROGRESS */
+.pbar{background:var(–b1);border-radius:3px;height:4px;overflow:hidden;margin-top:4px}
+.pfill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(–cyan),var(–purple));transition:width .5s}
+
+/* SEPARATOR */
+hr{border:none;border-top:1px solid var(–b1);margin:12px 0}
+
+/* PENDING TRADE CARD */
+.pending-trade{background:var(–s2);border:1px solid rgba(0,212,255,.2);border-radius:var(–r12);padding:14px;margin-bottom:10px;animation:slideUp .3s ease}
+.pt-header{display:flex;justify-content:space-between;align-items:start;margin-bottom:10px}
+.pt-title{font-size:15px;font-weight:800}
+.pt-meta{font-family:var(–mono);font-size:10px;color:var(–text3);margin-top:2px}
+.pt-params{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
+.pt-param{background:var(–bg);border-radius:var(–r8);padding:8px;text-align:center}
+.pt-param .k{font-family:var(–mono);font-size:9px;color:var(–text3);text-transform:uppercase;letter-spacing:1px}
+.pt-param .v{font-family:var(–mono);font-size:13px;font-weight:700;margin-top:2px}
+.pt-reason{background:var(–bg);border-radius:var(–r8);padding:10px;font-size:11px;color:var(–text2);line-height:1.6;margin:8px 0;font-family:var(–mono)}
+.pt-actions{display:flex;gap:8px}
+
+details{border:1px solid var(–b1);border-radius:var(–r8);padding:12px;margin-bottom:8px;cursor:pointer}
+details summary{font-weight:700;font-size:13px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details[open] summary{color:var(–cyan);margin-bottom:10px}
+details p{font-size:12px;color:var(–text2);line-height:1.7;margin-top:8px}
+
+/* LIVE INDICATOR */
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(–green);animation:blink 1.2s ease-in-out infinite;display:inline-block;margin-right:4px}
+
+/* NOTIFICATION BADGE pulse */
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+.pop{animation:pop .3s ease}
+
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ==================== SIDEBAR ==================== -->
+
+<aside id="sidebar">
+  <div class="sb-logo">
+    <div class="name">APEX</div>
+    <div class="sub">Trading Platform</div>
+  </div>
+  <div class="sb-mode">
+    <button id="mode-demo" class="active" onclick="setMode('demo')">DEMO</button>
+    <button id="mode-live" onclick="setMode('live')">LIVE</button>
+  </div>
+  <nav>
+    <div class="nav-i active" onclick="nav('dashboard')"><span class="ico">📊</span>Dashboard</div>
+    <div class="nav-i" onclick="nav('ai')"><span class="ico">🧠</span>AI Advisor</div>
+    <div class="nav-i" onclick="nav('strategies')"><span class="ico">🎯</span>Strategies</div>
+    <div class="nav-i" onclick="nav('trades')"><span class="ico">⚡</span>Live Trades<span class="badge" id="open-count">0</span></div>
+    <div class="nav-i" onclick="nav('pending')"><span class="ico">⏳</span>Pending<span class="badge" id="pending-count" style="background:var(--yellow);color:#000">0</span></div>
+    <div class="nav-i" onclick="nav('backtest')"><span class="ico">🔬</span>Backtest</div>
+    <div class="nav-i" onclick="nav('wallet')"><span class="ico">💰</span>Wallet</div>
+    <div class="nav-i" onclick="nav('settings')"><span class="ico">⚙️</span>Settings</div>
+    <div class="nav-i" onclick="nav('help')"><span class="ico">📖</span>Guide</div>
+  </nav>
+  <div class="sb-bottom">
+    <div class="portfolio-mini">
+      <div class="pm-label">Portfolio</div>
+      <div class="pm-val" id="sb-balance">$1,000.00</div>
+      <div class="pm-chg" id="sb-pnl"><span class="neu">+$0.00 (0.00%)</span></div>
+    </div>
+    <button class="btn btn-ghost btn-full btn-sm" onclick="openModal('cashout')">💸 Cash Out</button>
+  </div>
+</aside>
+
+<!-- ==================== MAIN ==================== -->
+
+<div id="main">
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <div class="tb-title" id="tb-title">Dashboard</div>
+    <div class="ticker-strip" id="ticker"></div>
+    <span class="status-pill stopped" id="bot-pill"><span class="status-dot"></span><span id="bot-pill-txt">BOT OFF</span></span>
+    <button class="btn btn-green btn-sm" id="bot-toggle-btn" onclick="toggleBot()">▶ Start Bot</button>
+    <button class="btn btn-ghost btn-sm" onclick="nav('ai')">🧠 Ask AI</button>
+    <button class="btn btn-ghost btn-sm" onclick="openModal('deposit')">+ Deposit</button>
+  </div>
+
+  <!-- CONTENT AREA -->
+
+  <div id="content">
+
+```
+<!-- ===== DASHBOARD ===== -->
+<div class="page active" id="page-dashboard">
+  <div class="g4" style="margin-bottom:12px">
+    <div class="stat"><div class="stat-label">Portfolio Value</div><div class="stat-val up" id="dash-balance">$1,000.00</div><div class="stat-sub" id="dash-pnl"><span class="neu">+$0.00</span></div></div>
+    <div class="stat"><div class="stat-label">Today P&L</div><div class="stat-val" id="dash-today">$0.00</div><div class="stat-sub" id="dash-today-pct"><span class="neu">0.00%</span></div></div>
+    <div class="stat"><div class="stat-label">Open Positions</div><div class="stat-val" id="dash-open" style="color:var(--cyan)">0</div><div class="stat-sub neu" id="dash-open-sub">No active trades</div></div>
+    <div class="stat"><div class="stat-label">Win Rate</div><div class="stat-val" id="dash-wr">—</div><div class="stat-sub neu" id="dash-wr-sub">No trades yet</div></div>
+  </div>
+
+  <div class="g-7-3" style="margin-bottom:12px">
+    <!-- MAIN CHART -->
+    <div class="card" style="padding:12px">
+      <div class="card-header">
+        <span class="card-title">Price Chart</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select id="chart-pair" style="width:100px;padding:4px 8px;font-size:11px" onchange="switchPair()">
+            <option>BTC/USDT</option><option>ETH/USDT</option><option>SOL/USDT</option><option>BNB/USDT</option><option>AVAX/USDT</option>
+          </select>
+          <select id="chart-tf" style="width:60px;padding:4px 8px;font-size:11px" onchange="switchTF()">
+            <option value="1m">1m</option><option value="5m">5m</option><option value="1h" selected>1h</option><option value="4h">4h</option><option value="1d">1d</option>
+          </select>
+          <button class="btn btn-ghost btn-xs" onclick="toggleIndicator('rsi')">RSI</button>
+          <button class="btn btn-ghost btn-xs" onclick="toggleIndicator('macd')">MACD</button>
+          <button class="btn btn-ghost btn-xs" onclick="toggleIndicator('bb')">BB</button>
+        </div>
+      </div>
+      <div class="chart-wrap" id="main-chart-wrap" style="height:260px">
+        <canvas id="main-chart"></canvas>
+      </div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--b1)">
+        <canvas id="sub-chart" style="width:100%;height:60px;display:block"></canvas>
+      </div>
+    </div>
+    <!-- INDICATORS -->
+    <div class="card" style="padding:12px">
+      <div class="card-title">Live Indicators</div>
+      <div id="indicators-panel">
+        <div class="ind-row"><span class="ind-name">RSI (14)</span><span id="ind-rsi" class="ind-val">—</span><span id="sig-rsi" class="ind-sig sig-neu">—</span></div>
+        <div class="ind-row"><span class="ind-name">MACD Line</span><span id="ind-macd" class="ind-val">—</span><span id="sig-macd" class="ind-sig sig-neu">—</span></div>
+        <div class="ind-row"><span class="ind-name">Signal Line</span><span id="ind-macd-sig" class="ind-val">—</span><span></span></div>
+        <div class="ind-row"><span class="ind-name">Histogram</span><span id="ind-macd-hist" class="ind-val">—</span><span></span></div>
+        <div class="ind-row"><span class="ind-name">BB Upper</span><span id="ind-bb-up" class="ind-val">—</span><span></span></div>
+        <div class="ind-row"><span class="ind-name">BB Middle</span><span id="ind-bb-mid" class="ind-val">—</span><span></span></div>
+        <div class="ind-row"><span class="ind-name">BB Lower</span><span id="ind-bb-lo" class="ind-val">—</span><span id="sig-bb" class="ind-sig sig-neu">—</span></div>
+        <div class="ind-row"><span class="ind-name">EMA 20</span><span id="ind-ema20" class="ind-val">—</span><span id="sig-ema" class="ind-sig sig-neu">—</span></div>
+        <div class="ind-row"><span class="ind-name">EMA 50</span><span id="ind-ema50" class="ind-val">—</span><span></span></div>
+        <div class="ind-row" style="border:none"><span class="ind-name">Volume</span><span id="ind-vol" class="ind-val">—</span><span id="sig-vol" class="ind-sig sig-neu">—</span></div>
+      </div>
+      <hr>
+      <div class="card-title">Overall Signal</div>
+      <div id="overall-signal" style="text-align:center;padding:10px;background:var(--bg);border-radius:var(--r8);font-family:var(--mono);font-size:13px;font-weight:700">Waiting for data...</div>
+    </div>
+  </div>
+
+  <!-- OPEN POSITIONS TABLE -->
+  <div class="card" style="padding:12px">
+    <div class="card-header">
+      <span class="card-title">Open Positions</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-red btn-sm" onclick="closeAllTrades()">Close All</button>
+        <button class="btn btn-ghost btn-sm" onclick="nav('trades')">View All →</button>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Pair</th><th>Mode</th><th>Dir</th><th>Size</th><th>Entry</th><th>Current</th><th>SL</th><th>TP</th><th>P&L</th><th>Time</th><th>Action</th></tr></thead>
+      <tbody id="open-trades-tbody"><tr><td colspan="11" style="text-align:center;color:var(--text3);padding:20px">No open positions</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== AI ADVISOR ===== -->
+<div class="page" id="page-ai" style="padding:0;height:calc(100vh - 52px);display:none;flex-direction:column">
+  <div class="card-header" style="padding:12px 16px;background:var(--s1);border-bottom:1px solid var(--b1);margin:0;flex-shrink:0">
+    <div>
+      <div style="font-weight:800;font-size:15px">🧠 Gemini AI Advisor</div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="ai-status-line">Enter your Gemini API key in Settings to activate</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="openModal('apikey')">🔑 Set API Key</button>
+  </div>
+  <div class="chat-area" id="chat-area"></div>
+  <div class="quick-chips" id="quick-chips">
+    <div class="chip" onclick="sendQ('Set up a conservative strategy for $500')">Conservative $500 strategy</div>
+    <div class="chip" onclick="sendQ('Explain what RSI means and when to use it')">What is RSI?</div>
+    <div class="chip" onclick="sendQ('What is the difference between DCA, Grid and Scalping?')">DCA vs Grid vs Scalp</div>
+    <div class="chip" onclick="sendQ('What risk level should I choose as a beginner?')">Best risk level?</div>
+    <div class="chip" onclick="sendQ('Analyze my current indicators and tell me if I should trade now')">Analyze my signals</div>
+    <div class="chip" onclick="sendQ('How do I safely cash out my profits?')">How to cash out?</div>
+    <div class="chip" onclick="sendQ('What settings should I use for BTC scalping?')">BTC scalp settings</div>
+  </div>
+  <div class="chat-input-row">
+    <textarea id="chat-input" placeholder="Ask anything about trading, strategy, risk, cash out…" onkeydown="chatKey(event)"></textarea>
+    <button class="btn btn-cyan" onclick="sendChat()">Send ↵</button>
+  </div>
+</div>
+
+<!-- ===== STRATEGIES ===== -->
+<div class="page" id="page-strategies">
+  <div class="page-header">
+    <div class="page-title">Strategy Builder</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="nav('ai')">🧠 AI Help</button>
+      <button class="btn btn-cyan btn-sm" onclick="saveStrategy()">💾 Save & Apply</button>
+    </div>
+  </div>
+
+  <div class="g-7-3">
+    <div>
+      <!-- TRADING MODE -->
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title">Trading Mode</div>
+        <div class="mode-grid">
+          <div class="mode-card sel" id="mode-trend" onclick="selectMode('trend')">
+            <div class="mi">📈</div><div class="ml">Trend Following</div>
+            <div class="ms">Rides momentum up or down using EMA crossovers + RSI confirmation. Best for 1h–4h timeframes. Medium activity.</div>
+          </div>
+          <div class="mode-card" id="mode-dca" onclick="selectMode('dca')">
+            <div class="mi">📦</div><div class="ml">DCA (Dollar Cost Average)</div>
+            <div class="ms">Buys fixed amounts at intervals regardless of price. Lowest risk, smooths entry points. Good for volatile markets.</div>
+          </div>
+          <div class="mode-card" id="mode-grid" onclick="selectMode('grid')">
+            <div class="mi">🔲</div><div class="ml">Grid Trading</div>
+            <div class="ms">Places buy/sell orders at price intervals creating a grid. Profits from sideways markets. Set upper/lower range.</div>
+          </div>
+          <div class="mode-card" id="mode-scalp" onclick="selectMode('scalp')">
+            <div class="mi">⚡</div><div class="ml">Scalping</div>
+            <div class="ms">Many small quick trades targeting 0.3–0.8% per trade. High activity, uses 1m–5m timeframes. Needs tight spreads.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RISK + PARAMETERS -->
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title">Risk Level</div>
+        <div class="risk-grid">
+          <div class="risk-card" data-r="1" onclick="selectRisk(1)"><div class="re">🐢</div><div class="rl">Ultra Safe</div><div class="rs">SL 1% TP 2%</div></div>
+          <div class="risk-card sel" data-r="2" onclick="selectRisk(2)"><div class="re">🌱</div><div class="rl">Conservative</div><div class="rs">SL 2% TP 4%</div></div>
+          <div class="risk-card" data-r="3" onclick="selectRisk(3)"><div class="re">⚖️</div><div class="rl">Balanced</div><div class="rs">SL 3% TP 6%</div></div>
+          <div class="risk-card" data-r="4" onclick="selectRisk(4)"><div class="re">🚀</div><div class="rl">Aggressive</div><div class="rs">SL 5% TP 15%</div></div>
+          <div class="risk-card" data-r="5" onclick="selectRisk(5)"><div class="re">🔥</div><div class="rl">Degen</div><div class="rs">SL 8% TP 25%</div></div>
+        </div>
+        <div id="risk-explain" class="info-box" style="margin-bottom:0">🌱 <strong>Conservative:</strong> Small position sizes (5–8%), tight 2% stop loss, 4% take profit. Max 2 simultaneous trades. Suited to beginners. Expect 1–3% weekly gains in good conditions.</div>
+      </div>
+
+      <!-- PARAMETERS -->
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title">Parameters</div>
+        <div class="g2">
+          <div>
+            <div class="field">
+              <label>Stop Loss % <span id="sl-val" style="color:var(--cyan)">2%</span></label>
+              <input type="range" id="sl-range" min="0.5" max="20" step="0.5" value="2" oninput="updateRange('sl',this.value)">
+            </div>
+            <div class="field">
+              <label>Take Profit % <span id="tp-val" style="color:var(--cyan)">4%</span></label>
+              <input type="range" id="tp-range" min="0.5" max="50" step="0.5" value="4" oninput="updateRange('tp',this.value)">
+            </div>
+            <div class="field">
+              <label>Position Size % <span id="ps-val" style="color:var(--cyan)">8%</span></label>
+              <input type="range" id="ps-range" min="1" max="100" step="1" value="8" oninput="updateRange('ps',this.value)">
+            </div>
+            <div class="field">
+              <label>Max Open Trades <span id="mt-val" style="color:var(--cyan)">2</span></label>
+              <input type="range" id="mt-range" min="1" max="20" step="1" value="2" oninput="updateRange('mt',this.value)">
+            </div>
+          </div>
+          <div>
+            <div class="field">
+              <label>Trading Pairs</label>
+              <select id="strat-pairs">
+                <option value="BTCUSDT">BTC/USDT only</option>
+                <option value="ETHUSDT">ETH/USDT only</option>
+                <option value="top3">BTC + ETH + SOL</option>
+                <option value="top5" selected>Top 5 by cap</option>
+                <option value="all">All available</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Timeframe</label>
+              <select id="strat-tf">
+                <option value="1m">1 Minute (Scalping)</option>
+                <option value="5m">5 Minutes</option>
+                <option value="15m">15 Minutes</option>
+                <option value="1h" selected>1 Hour</option>
+                <option value="4h">4 Hours</option>
+                <option value="1d">Daily</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Kill Switch – Max Daily Loss</label>
+              <select id="strat-kill">
+                <option value="3">3% of portfolio</option>
+                <option value="5" selected>5% of portfolio</option>
+                <option value="10">10% of portfolio</option>
+                <option value="15">15% of portfolio</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Approval Mode</label>
+              <select id="strat-approval">
+                <option value="auto">Full Auto (execute immediately)</option>
+                <option value="manual" selected>Manual Approval per trade</option>
+                <option value="notify">Auto + Notify only</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODE-SPECIFIC PARAMS -->
+        <div id="mode-extra-params"></div>
+
+        <!-- SAFETY TOGGLES -->
+        <hr>
+        <div class="card-title">Safety Controls</div>
+        <div class="g2" style="gap:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg);border-radius:var(--r8);padding:10px 12px">
+            <div><div style="font-size:12px;font-weight:700">Kill Switch</div><div style="font-size:10px;color:var(--text3)">Auto-halt on daily loss limit</div></div>
+            <div class="toggle on" id="tog-kill" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg);border-radius:var(--r8);padding:10px 12px">
+            <div><div style="font-size:12px;font-weight:700">Trailing Stop Loss</div><div style="font-size:10px;color:var(--text3)">Lock in profits as price rises</div></div>
+            <div class="toggle" id="tog-trail" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg);border-radius:var(--r8);padding:10px 12px">
+            <div><div style="font-size:12px;font-weight:700">Short Selling</div><div style="font-size:10px;color:var(--text3)">Allow SHORT trades (profit on drops)</div></div>
+            <div class="toggle" id="tog-short" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg);border-radius:var(--r8);padding:10px 12px">
+            <div><div style="font-size:12px;font-weight:700">Weekend Pause</div><div style="font-size:10px;color:var(--text3)">Stop trading Sat–Sun</div></div>
+            <div class="toggle" id="tog-weekend" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE: STRATEGY SUMMARY -->
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title">Active Strategy</div>
+        <div id="strat-summary"></div>
+        <hr>
+        <button class="btn btn-cyan btn-full btn-sm" onclick="saveStrategy()">Apply Strategy</button>
+      </div>
+      <div class="card">
+        <div class="card-title">AI Assessment</div>
+        <div id="strat-ai-note" style="font-size:12px;color:var(--text2);line-height:1.6">
+          Configure your strategy above and click "AI Help" for a personalized review and risk assessment.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LIVE TRADES ===== -->
+<div class="page" id="page-trades">
+  <div class="page-header">
+    <div class="page-title">Live Trades</div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-red btn-sm" onclick="closeAllTrades()">⛔ Close All</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tab-open-btn" onclick="switchTab('open')">Open Positions</div>
+    <div class="tab" id="tab-hist-btn" onclick="switchTab('history')">Trade History</div>
+    <div class="tab" id="tab-perf-btn" onclick="switchTab('performance')">Performance</div>
+  </div>
+
+  <!-- OPEN -->
+  <div id="tab-open">
+    <div class="card" style="padding:12px">
+      <table>
+        <thead><tr><th>Pair</th><th>Mode</th><th>Dir</th><th>Size $</th><th>Entry</th><th>Current</th><th>SL</th><th>TP</th><th>P&L $</th><th>P&L %</th><th>Duration</th><th>Close</th></tr></thead>
+        <tbody id="trades-open-tbody"><tr><td colspan="12" style="text-align:center;color:var(--text3);padding:20px">No open positions</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="tab-history" style="display:none">
+    <div class="card" style="padding:12px">
+      <div class="card-header">
+        <span class="card-title">Completed Trades</span>
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV()">📥 Export CSV</button>
+      </div>
+      <table>
+        <thead><tr><th>Date</th><th>Pair</th><th>Mode</th><th>Dir</th><th>Entry</th><th>Exit</th><th>P&L $</th><th>P&L %</th><th>Reason</th></tr></thead>
+        <tbody id="trades-hist-tbody"><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">No completed trades yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PERFORMANCE -->
+  <div id="tab-performance" style="display:none">
+    <div class="g4" style="margin-bottom:12px">
+      <div class="stat"><div class="stat-label">Total Trades</div><div class="stat-val" id="perf-total">0</div></div>
+      <div class="stat"><div class="stat-label">Win Rate</div><div class="stat-val" id="perf-wr">—</div></div>
+      <div class="stat"><div class="stat-label">Total P&L</div><div class="stat-val" id="perf-pnl">$0.00</div></div>
+      <div class="stat"><div class="stat-label">Avg Win / Loss</div><div class="stat-val" id="perf-ratio">—</div></div>
+    </div>
+    <div class="card" style="padding:12px">
+      <div class="card-title">Equity Curve</div>
+      <div class="chart-wrap" style="height:180px"><canvas id="equity-chart"></canvas></div>
+    </div>
+    <div class="g2" style="margin-top:12px">
+      <div class="card"><div class="card-title">By Trading Mode</div><div id="perf-by-mode" style="font-size:12px;color:var(--text3)">No data yet</div></div>
+      <div class="card"><div class="card-title">By Pair</div><div id="perf-by-pair" style="font-size:12px;color:var(--text3)">No data yet</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PENDING APPROVALS ===== -->
+<div class="page" id="page-pending">
+  <div class="page-header">
+    <div class="page-title">Pending Approvals</div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-green btn-sm" onclick="approveAll()">✅ Approve All</button>
+      <button class="btn btn-red btn-sm" onclick="rejectAll()">❌ Reject All</button>
+    </div>
+  </div>
+  <div class="info-box warn">⚠️ The bot has found trading opportunities. Review each one and approve or reject. In <strong>Full Auto</strong> mode, these execute immediately without this screen.</div>
+  <div id="pending-container"><div style="text-align:center;color:var(--text3);padding:40px;font-family:var(--mono);font-size:13px">No pending trades. Bot is scanning markets…</div></div>
+</div>
+
+<!-- ===== BACKTEST ===== -->
+<div class="page" id="page-backtest">
+  <div class="page-header">
+    <div class="page-title">🔬 Strategy Backtester</div>
+    <button class="btn btn-cyan btn-sm" id="run-bt-btn" onclick="runBacktest()">▶ Run Backtest</button>
+  </div>
+  <div class="g-7-3" style="margin-bottom:12px">
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title">Configuration</div>
+        <div class="g2">
+          <div>
+            <div class="field"><label>Asset</label>
+              <select id="bt-pair"><option>BTC/USDT</option><option>ETH/USDT</option><option>SOL/USDT</option></select></div>
+            <div class="field"><label>Strategy</label>
+              <select id="bt-mode"><option value="trend">Trend Following</option><option value="dca">DCA</option><option value="grid">Grid</option><option value="scalp">Scalping</option></select></div>
+            <div class="field"><label>Starting Capital ($)</label>
+              <input type="number" id="bt-capital" value="1000"></div>
+          </div>
+          <div>
+            <div class="field"><label>Period</label>
+              <select id="bt-period"><option value="7">7 Days</option><option value="30" selected>30 Days</option><option value="90">90 Days</option><option value="180">6 Months</option></select></div>
+            <div class="field"><label>Stop Loss %</label>
+              <input type="number" id="bt-sl" value="2" step="0.5"></div>
+            <div class="field"><label>Take Profit %</label>
+              <input type="number" id="bt-tp" value="4" step="0.5"></div>
+          </div>
+        </div>
+        <div class="field"><label>Fee per Trade %</label>
+          <input type="number" id="bt-fee" value="0.1" step="0.01"></div>
+      </div>
+      <!-- BACKTEST CHART -->
+      <div class="card" style="padding:12px">
+        <div class="card-title">Equity Curve vs Buy & Hold</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="bt-chart"></canvas></div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title">Results</div>
+        <div id="bt-results">
+          <div style="text-align:center;color:var(--text3);padding:20px;font-family:var(--mono);font-size:12px">Run a backtest to see results</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Trade Log</div>
+        <div id="bt-log" style="max-height:200px;overflow-y:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">
+          <div style="text-align:center;padding:16px">Run backtest to see trade log</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== WALLET ===== -->
+<div class="page" id="page-wallet">
+  <div class="page-header"><div class="page-title">💰 Wallet</div></div>
+  <div style="background:linear-gradient(135deg,rgba(0,212,255,.06),rgba(124,77,255,.06));border:1px solid var(--b2);border-radius:var(--r16);padding:32px;text-align:center;margin-bottom:14px">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">Total Portfolio Value</div>
+    <div style="font-family:var(--mono);font-size:46px;font-weight:700;color:var(--green)" id="wallet-total">$1,000.00</div>
+    <div style="font-family:var(--mono);font-size:13px;color:var(--text3);margin-top:4px" id="wallet-btc-eq">≈ calculating…</div>
+  </div>
+  <div class="g4" style="margin-bottom:14px">
+    <div class="mode-card" style="text-align:center;cursor:pointer" onclick="openModal('deposit')"><div class="mi">⬇️</div><div class="ml" style="font-size:12px">Deposit</div></div>
+    <div class="mode-card" style="text-align:center;cursor:pointer" onclick="openModal('cashout')"><div class="mi">⬆️</div><div class="ml" style="font-size:12px">Withdraw</div></div>
+    <div class="mode-card" style="text-align:center;cursor:pointer" onclick="openModal('convert')"><div class="mi">🔄</div><div class="ml" style="font-size:12px">Convert</div></div>
+    <div class="mode-card" style="text-align:center;cursor:pointer" onclick="openModal('connect-ex')"><div class="mi">🔗</div><div class="ml" style="font-size:12px">Connect Exchange</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-title">Asset Balances</div>
+      <table><thead><tr><th>Asset</th><th>Amount</th><th>USD Value</th><th>%</th></tr></thead>
+      <tbody id="wallet-assets"></tbody></table>
+    </div>
+    <div class="card"><div class="card-title">Recent Transactions</div>
+      <table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Status</th></tr></thead>
+      <tbody id="wallet-txns">
+        <tr><td>Today</td><td>Initial Balance</td><td class="up">+$1,000.00</td><td><span class="badge badge-open">ACTIVE</span></td></tr>
+      </tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SETTINGS ===== -->
+<div class="page" id="page-settings">
+  <div class="page-header"><div class="page-title">⚙️ Settings</div></div>
+  <div class="tabs">
+    <div class="tab active" id="stab-api-btn" onclick="sTab('api')">AI & API</div>
+    <div class="tab" id="stab-ex-btn" onclick="sTab('ex')">Exchanges</div>
+    <div class="tab" id="stab-notif-btn" onclick="sTab('notif')">Notifications</div>
+    <div class="tab" id="stab-sec-btn" onclick="sTab('sec')">Security</div>
+  </div>
+  <div id="stab-api">
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title">Gemini AI Configuration</div>
+      <div class="info-box">Get your free API key at <strong>aistudio.google.com</strong> → Create API Key → Copy and paste below. The key is stored locally in your browser only.</div>
+      <div class="field"><label>Gemini API Key</label><input type="password" id="gemini-key-input" placeholder="AIza..."></div>
+      <div class="field"><label>Model</label>
+        <select id="gemini-model">
+          <option value="gemini-2.0-flash">Gemini 2.0 Flash (Recommended — fast & smart)</option>
+          <option value="gemini-1.5-flash">Gemini 1.5 Flash (Older)</option>
+          <option value="gemini-1.5-pro">Gemini 1.5 Pro (Slower, smarter)</option>
+        </select>
+      </div>
+      <button class="btn btn-cyan btn-sm" onclick="saveAPIKey()">Save API Key</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Exchange API Keys (for Live Mode)</div>
+      <div class="info-box warn">⚠️ Only enable Read + Trade permissions. NEVER enable withdrawal permissions on your API key.</div>
+      <div class="field"><label>Exchange</label>
+        <select id="ex-select"><option>Binance</option><option>Coinbase</option><option>Bybit</option><option>Kraken</option><option>OKX</option></select>
+      </div>
+      <div class="field"><label>API Key</label><input type="password" placeholder="Your API Key"></div>
+      <div class="field"><label>API Secret</label><input type="password" placeholder="Your Secret Key"></div>
+      <button class="btn btn-cyan btn-sm" onclick="toast('Exchange API saved (Live mode only)','ok')">Connect Exchange</button>
+    </div>
+  </div>
+  <div id="stab-ex" style="display:none">
+    <div class="card">
+      <div class="card-title">Supported Exchanges (Live Mode)</div>
+      <div class="g2" style="margin-top:8px">
+        <div style="background:var(--bg);border:1px solid var(--b1);border-radius:var(--r8);padding:12px;display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-weight:700;font-size:13px">🟡 Binance</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Spot & Futures</div></div>
+          <span style="color:var(--text3);font-family:var(--mono);font-size:11px">Not connected</span>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--b1);border-radius:var(--r8);padding:12px;display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-weight:700;font-size:13px">🔵 Coinbase</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Spot only</div></div>
+          <span style="color:var(--text3);font-family:var(--mono);font-size:11px">Not connected</span>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--b1);border-radius:var(--r8);padding:12px;display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-weight:700;font-size:13px">🟠 Bybit</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Spot & Derivatives</div></div>
+          <span style="color:var(--text3);font-family:var(--mono);font-size:11px">Not connected</span>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--b1);border-radius:var(--r8);padding:12px;display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-weight:700;font-size:13px">🦅 Kraken</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Spot & Futures</div></div>
+          <span style="color:var(--text3);font-family:var(--mono);font-size:11px">Not connected</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="stab-notif" style="display:none">
+    <div class="card">
+      <div class="card-title">Alert Preferences</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);border-radius:var(--r8);padding:10px 12px"><div><div style="font-size:13px;font-weight:700">Trade Opened/Closed</div><div style="font-size:10px;color:var(--text3)">In-app toast notification</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);border-radius:var(--r8);padding:10px 12px"><div><div style="font-size:13px;font-weight:700">Kill Switch Triggered</div><div style="font-size:10px;color:var(--text3)">Emergency stop fired</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);border-radius:var(--r8);padding:10px 12px"><div><div style="font-size:13px;font-weight:700">Daily P&L Summary</div><div style="font-size:10px;color:var(--text3)">End of day report</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      </div>
+      <div class="field" style="margin-top:12px"><label>Email (for alerts)</label><input type="email" placeholder="you@example.com"></div>
+      <div class="field"><label>Telegram Bot Token (optional)</label><input type="text" placeholder="For Telegram notifications"></div>
+      <button class="btn btn-cyan btn-sm" onclick="toast('Notification settings saved','ok')">Save</button>
+    </div>
+  </div>
+  <div id="stab-sec" style="display:none">
+    <div class="card">
+      <div class="card-title">Security</div>
+      <div class="info-box warn">⚠️ This is a client-side app. Your API keys are stored in localStorage. For production use, deploy a backend server to store keys server-side encrypted.</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);border-radius:var(--r8);padding:10px 12px"><div><div style="font-weight:700">Session Timeout</div></div><select style="width:120px"><option>30 min</option><option>1 hour</option><option>Never</option></select></div>
+      </div>
+      <hr>
+      <button class="btn btn-red btn-sm" onclick="clearAllData()">🗑️ Clear All Data (Reset)</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== HELP ===== -->
+<div class="page" id="page-help">
+  <div class="page-header"><div class="page-title">📖 Complete Guide</div></div>
+  <div class="tabs">
+    <div class="tab active" id="htab-start-btn" onclick="hTab('start')">Getting Started</div>
+    <div class="tab" id="htab-modes-btn" onclick="hTab('modes')">Trading Modes</div>
+    <div class="tab" id="htab-ind-btn" onclick="hTab('ind')">Indicators</div>
+    <div class="tab" id="htab-faq-btn" onclick="hTab('faq')">FAQ</div>
+    <div class="tab" id="htab-gloss-btn" onclick="hTab('gloss')">Glossary</div>
+  </div>
+  <div id="htab-start">
+    <div class="card">
+      <div class="card-title">Step-by-Step Setup</div>
+      <div id="guide-steps"></div>
+    </div>
+  </div>
+  <div id="htab-modes" style="display:none">
+    <div class="card"><div class="card-title">Trading Mode Deep Dive</div><div id="mode-guide"></div></div>
+  </div>
+  <div id="htab-ind" style="display:none">
+    <div class="card"><div class="card-title">Understanding Indicators</div><div id="ind-guide"></div></div>
+  </div>
+  <div id="htab-faq" style="display:none"><div class="card"><div id="faq-content"></div></div></div>
+  <div id="htab-gloss" style="display:none"><div id="gloss-content"></div></div>
+</div>
+```
+
+  </div><!-- end content -->
+</div><!-- end main -->
+</div><!-- end app -->
+
+<!-- ==================== MODALS ==================== -->
+
+<div class="overlay" id="modal-deposit">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('deposit')">✕</button>
+    <h3>⬇️ Deposit Funds</h3>
+    <p>Add funds to your trading portfolio. In Demo mode this adds virtual capital.</p>
+    <div class="field"><label>Amount (USD)</label><input type="number" id="dep-amount" value="500" min="1"></div>
+    <div class="field"><label>Method (Demo Mode)</label>
+      <select><option>Virtual Credit (instant)</option><option>Simulated Bank Transfer</option></select>
+    </div>
+    <div class="info-box">In Live Mode, funds stay on your exchange. APEX only has trade permissions, never withdrawal access.</div>
+    <button class="btn btn-green btn-full" onclick="depositFunds()">Deposit</button>
+  </div>
+</div>
+
+<div class="overlay" id="modal-cashout">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('cashout')">✕</button>
+    <h3>💸 Cash Out</h3>
+    <p>Follow these steps to withdraw your profits safely.</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+      <div style="background:var(--bg);border-radius:var(--r8);padding:12px;display:flex;gap:10px;align-items:center">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--cyan);color:#000;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center">1</div>
+        <div><div style="font-weight:700;font-size:12px">Pause Bot</div><div style="font-size:11px;color:var(--text3)">Stop new trades opening</div></div>
+        <button class="btn btn-yellow btn-sm" style="margin-left:auto" onclick="pauseBot()">Pause</button>
+      </div>
+      <div style="background:var(--bg);border-radius:var(--r8);padding:12px;display:flex;gap:10px;align-items:center">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--cyan);color:#000;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center">2</div>
+        <div><div style="font-weight:700;font-size:12px">Close All Positions</div><div style="font-size:11px;color:var(--text3)">Exit all open trades at market</div></div>
+        <button class="btn btn-red btn-sm" style="margin-left:auto" onclick="closeAllTrades();toast('All positions closed','ok')">Close All</button>
+      </div>
+      <div style="background:var(--bg);border-radius:var(--r8);padding:12px;display:flex;gap:10px;align-items:center">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--cyan);color:#000;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center">3</div>
+        <div><div style="font-weight:700;font-size:12px">Sell on Your Exchange</div><div style="font-size:11px;color:var(--text3)">Convert crypto → USDT → USD</div></div>
+        <a class="btn btn-ghost btn-sm" href="https://www.binance.com" target="_blank" style="margin-left:auto;text-decoration:none">Open ↗</a>
+      </div>
+      <div style="background:var(--bg);border-radius:var(--r8);padding:12px;display:flex;gap:10px;align-items:center">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--cyan);color:#000;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center">4</div>
+        <div><div style="font-weight:700;font-size:12px">Withdraw to Bank</div><div style="font-size:11px;color:var(--text3)">1–5 business days via ACH/wire</div></div>
+      </div>
+    </div>
+    <div class="info-box warn">⚠️ Crypto profits may be taxable. Export your trade history CSV for your records.</div>
+    <button class="btn btn-ghost btn-full" onclick="closeModal('cashout')">Done</button>
+  </div>
+</div>
+
+<div class="overlay" id="modal-apikey">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('apikey')">✕</button>
+    <h3>🔑 Gemini API Key</h3>
+    <p>Get a free key at <strong>aistudio.google.com</strong> → "Get API Key" → Copy it here.</p>
+    <div class="field"><label>API Key</label><input type="password" id="modal-gemini-key" placeholder="AIza…"></div>
+    <div class="field"><label>Model</label>
+      <select id="modal-gemini-model">
+        <option value="gemini-2.0-flash">Gemini 2.0 Flash (Recommended)</option>
+        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+      </select>
+    </div>
+    <button class="btn btn-cyan btn-full" onclick="saveAPIKeyModal()">Save & Activate AI</button>
+  </div>
+</div>
+
+<div class="overlay" id="modal-convert">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('convert')">✕</button>
+    <h3>🔄 Convert Assets</h3>
+    <p>Swap between assets in your portfolio at live rates.</p>
+    <div class="field"><label>From</label><select><option>USDT</option><option>BTC</option><option>ETH</option></select></div>
+    <div class="field"><label>Amount</label><input type="number" placeholder="0.00"></div>
+    <div class="field"><label>To</label><select><option>BTC</option><option>ETH</option><option>USDT</option></select></div>
+    <div class="info-box">Live rate applied at execution. 0.1% conversion fee.</div>
+    <button class="btn btn-cyan btn-full" onclick="toast('Conversion executed!','ok');closeModal('convert')">Execute Convert</button>
+  </div>
+</div>
+
+<div class="overlay" id="modal-connect-ex">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('connect-ex')">✕</button>
+    <h3>🔗 Connect Exchange</h3>
+    <p>Go to Settings → Exchanges for full API key setup instructions.</p>
+    <button class="btn btn-cyan btn-full" onclick="closeModal('connect-ex');nav('settings')">Go to Settings →</button>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<!-- ==================== JAVASCRIPT ENGINES ==================== -->
+
+<script>
+'use strict';
+
+// =====================================================
+// STATE
+// =====================================================
+const STATE = {
+  mode: 'demo',         // 'demo' | 'live'
+  botActive: false,
+  balance: 1000,
+  startBalance: 1000,
+  todayStartBalance: 1000,
+  openTrades: [],       // Array of trade objects
+  closedTrades: [],     // Array of closed trade objects
+  pendingTrades: [],    // Awaiting approval
+  equityCurve: [1000],  // Equity over time
+  prices: {BTCUSDT:67000,ETHUSDT:3500,SOLUSDT:140,BNBUSDT:580,AVAXUSDT:38},
+  priceHistory: {BTCUSDT:[],ETHUSDT:[],SOLUSDT:[],BNBUSDT:[],AVAXUSDT:[]},
+  ohlcv: {BTCUSDT:[],ETHUSDT:[],SOLUSDT:[],BNBUSDT:[],AVAXUSDT:[]},
+  currentPair: 'BTCUSDT',
+  currentTF: '1h',
+  indicators: {rsi:null,macd:null,bb:null,ema20:null,ema50:null},
+  showRSI: false, showMACD: true, showBB: true,
+  strategy: {
+    mode:'trend',sl:2,tp:4,posSize:8,maxTrades:2,
+    pairs:'top5',tf:'1h',kill:5,approval:'manual',
+    trailing:false,shorts:false,weekend:false,
+    gridLow:0,gridHigh:0,gridLevels:10,
+    dcaAmount:50,dcaInterval:60,
+    scalp: {minVol:100000,rsiEntry:50}
+  },
+  geminiKey: localStorage.getItem('gemini_key')||'',
+  geminiModel: localStorage.getItem('gemini_model')||'gemini-2.0-flash',
+  chatHistory: [],
+  tradeId: 1,
+  botInterval: null,
+  priceInterval: null,
+  chartInterval: null,
+  dcaTimer: 0,
+  gridOrders: [],
+  killTriggered: false
+};
+
+const PAIRS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','AVAXUSDT'];
+const PAIR_LABELS = {BTCUSDT:'BTC/USDT',ETHUSDT:'ETH/USDT',SOLUSDT:'SOL/USDT',BNBUSDT:'BNB/USDT',AVAXUSDT:'AVAX/USDT'};
+
+// =====================================================
+// PRICE ENGINE
+// =====================================================
+// Realistic GBM (geometric brownian motion) simulation
+function simPrice(base, vol=0.0008) {
+  const drift = (Math.random()-0.498)*vol;
+  return base * (1 + drift);
+}
+
+// Base volatility per asset
+const VOL = {BTCUSDT:0.0006,ETHUSDT:0.0008,SOLUSDT:0.0012,BNBUSDT:0.0007,AVAXUSDT:0.0014};
+
+function initPriceHistory() {
+  // Generate 200 candles of synthetic OHLCV history per pair
+  const bases = {BTCUSDT:65000,ETHUSDT:3200,SOLUSDT:130,BNBUSDT:560,AVAXUSDT:35};
+  const now = Date.now();
+  PAIRS.forEach(pair => {
+    let p = bases[pair];
+    const candles = [];
+    for (let i=200; i>=0; i--) {
+      const o = p;
+      const moves = Array.from({length:4},()=> p*(1+(Math.random()-.499)*VOL[pair]*3));
+      const h = Math.max(o,...moves);
+      const l = Math.min(o,...moves);
+      const c = moves[3];
+      const v = (Math.random()*0.5+0.5)*1000000;
+      candles.push({t:now - i*3600000, o, h, l, c, v});
+      p = c;
+    }
+    STATE.ohlcv[pair] = candles;
+    STATE.prices[pair] = p;
+    // price history (close prices)
+    STATE.priceHistory[pair] = candles.map(c=>c.c);
+  });
+}
+
+function tickPrices() {
+  PAIRS.forEach(pair => {
+    const prev = STATE.prices[pair];
+    const np = simPrice(prev, VOL[pair]);
+    STATE.prices[pair] = np;
+    STATE.priceHistory[pair].push(np);
+    if (STATE.priceHistory[pair].length > 500) STATE.priceHistory[pair].shift();
+
+    // Update last candle or create new one
+    const candles = STATE.ohlcv[pair];
+    if (candles.length > 0) {
+      const last = candles[candles.length-1];
+      last.c = np;
+      last.h = Math.max(last.h, np);
+      last.l = Math.min(last.l, np);
+      last.v += Math.random()*10000;
+    }
+  });
+  updateTicker();
+  updateDashboardPrices();
+  computeAllIndicators();
+  checkTradeConditions();
+  updateOpenTradesPnL();
+}
+
+// In LIVE mode, fetch real prices from CoinGecko
+async function fetchLivePrices() {
+  try {
+    const ids = 'bitcoin,ethereum,solana,binancecoin,avalanche-2';
+    const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
+    const d = await r.json();
+    const map = {bitcoin:'BTCUSDT',ethereum:'ETHUSDT',solana:'SOLUSDT',binancecoin:'BNBUSDT','avalanche-2':'AVAXUSDT'};
+    Object.entries(map).forEach(([cg,pair])=>{
+      if (d[cg]) STATE.prices[pair] = d[cg].usd;
+    });
+    updateTicker();
+    updateDashboardPrices();
+    computeAllIndicators();
+  } catch(e) {
+    console.warn('CoinGecko fetch failed, using simulation');
+    tickPrices();
+  }
+}
+
+function updateTicker() {
+  const el = document.getElementById('ticker');
+  if (!el) return;
+  el.innerHTML = PAIRS.map(p=>{
+    const price = STATE.prices[p];
+    const prev = STATE.priceHistory[p][STATE.priceHistory[p].length-2]||price;
+    const up = price >= prev;
+    const fmtPrice = price > 100 ? price.toFixed(2) : price.toFixed(4);
+    return `<div class="tick-item"><span class="tick-sym">${PAIR_LABELS[p].replace('/USDT','')}</span><span class="${up?'tick-up':'tick-dn'}">$${fmtPrice}</span></div>`;
+  }).join('');
+}
+
+// =====================================================
+// INDICATOR ENGINE (Real Math)
+// =====================================================
+function calcEMA(data, period) {
+  const k = 2/(period+1);
+  let ema = data.slice(0,period).reduce((a,b)=>a+b,0)/period;
+  const result = new Array(period-1).fill(null);
+  result.push(ema);
+  for (let i=period; i<data.length; i++) {
+    ema = data[i]*k + ema*(1-k);
+    result.push(ema);
+  }
+  return result;
+}
+
+function calcRSI(closes, period=14) {
+  if (closes.length < period+1) return null;
+  let gains=0,losses=0;
+  for (let i=1; i<=period; i++) {
+    const diff = closes[i]-closes[i-1];
+    if (diff>0) gains+=diff; else losses-=diff;
+  }
+  let avgG=gains/period, avgL=losses/period;
+  for (let i=period+1; i<closes.length; i++) {
+    const diff=closes[i]-closes[i-1];
+    const g=diff>0?diff:0, l=diff<0?-diff:0;
+    avgG=(avgG*(period-1)+g)/period;
+    avgL=(avgL*(period-1)+l)/period;
+  }
+  if (avgL===0) return 100;
+  const rs=avgG/avgL;
+  return 100-(100/(1+rs));
+}
+
+function calcMACD(closes, fast=12, slow=26, signal=9) {
+  if (closes.length < slow+signal) return null;
+  const emaFast = calcEMA(closes, fast);
+  const emaSlow = calcEMA(closes, slow);
+  const macdLine = [];
+  for (let i=0; i<closes.length; i++) {
+    if (emaFast[i]!==null && emaSlow[i]!==null) macdLine.push(emaFast[i]-emaSlow[i]);
+    else macdLine.push(null);
+  }
+  const validMACD = macdLine.filter(v=>v!==null);
+  if (validMACD.length < signal) return null;
+  const signalLine = calcEMA(validMACD, signal);
+  const lastMACD = validMACD[validMACD.length-1];
+  const lastSignal = signalLine[signalLine.length-1];
+  return {macd:lastMACD, signal:lastSignal, hist:lastMACD-lastSignal, macdLine, signalLine};
+}
+
+function calcBB(closes, period=20, mult=2) {
+  if (closes.length < period) return null;
+  const slice = closes.slice(-period);
+  const mean = slice.reduce((a,b)=>a+b,0)/period;
+  const variance = slice.reduce((a,b)=>a+(b-mean)**2,0)/period;
+  const std = Math.sqrt(variance);
+  return {upper:mean+mult*std, middle:mean, lower:mean-mult*std};
+}
+
+function computeAllIndicators() {
+  const closes = STATE.priceHistory[STATE.currentPair];
+  if (closes.length < 30) return;
+
+  const rsi = calcRSI(closes.slice(-50));
+  const macd = calcMACD(closes.slice(-100));
+  const bb = calcBB(closes.slice(-20));
+  const ema20arr = calcEMA(closes.slice(-60), 20);
+  const ema50arr = calcEMA(closes.slice(-80), 50);
+  const ema20 = ema20arr[ema20arr.length-1];
+  const ema50 = ema50arr[ema50arr.length-1];
+  const price = STATE.prices[STATE.currentPair];
+
+  STATE.indicators = {rsi, macd, bb, ema20, ema50, price};
+
+  // Update UI
+  const fmt = (v,d=2)=>v!=null?v.toFixed(d):'—';
+  const fmtP = (v)=>v!=null?'$'+v.toFixed(2):'—';
+
+  el('ind-rsi').textContent = rsi!=null?rsi.toFixed(1):'—';
+  el('ind-rsi').className = 'ind-val '+(rsi<30?'up':rsi>70?'dn':'neu');
+  el('sig-rsi').textContent = rsi!=null?(rsi<30?'OVERSOLD':rsi>70?'OVERBOUGHT':'NEUTRAL'):'—';
+  el('sig-rsi').className = 'ind-sig '+(rsi!=null?(rsi<30?'sig-buy':rsi>70?'sig-sell':'sig-neu'):'sig-neu');
+
+  if (macd) {
+    el('ind-macd').textContent = fmt(macd.macd,4);
+    el('ind-macd-sig').textContent = fmt(macd.signal,4);
+    el('ind-macd-hist').textContent = fmt(macd.hist,4);
+    el('ind-macd-hist').className = 'ind-val '+(macd.hist>0?'up':'dn');
+    const bullish = macd.macd > macd.signal;
+    el('sig-macd').textContent = bullish?'BULLISH':'BEARISH';
+    el('sig-macd').className = 'ind-sig '+(bullish?'sig-buy':'sig-sell');
+  }
+
+  if (bb) {
+    el('ind-bb-up').textContent = fmtP(bb.upper);
+    el('ind-bb-mid').textContent = fmtP(bb.middle);
+    el('ind-bb-lo').textContent = fmtP(bb.lower);
+    const bbsig = price>bb.upper?'ABOVE BB':price<bb.lower?'BELOW BB':'IN BAND';
+    el('sig-bb').textContent = bbsig;
+    el('sig-bb').className = 'ind-sig '+(price>bb.upper?'sig-sell':price<bb.lower?'sig-buy':'sig-neu');
+  }
+
+  el('ind-ema20').textContent = fmtP(ema20);
+  el('ind-ema50').textContent = fmtP(ema50);
+  if (ema20&&ema50) {
+    el('sig-ema').textContent = ema20>ema50?'BULL CROSS':'BEAR CROSS';
+    el('sig-ema').className = 'ind-sig '+(ema20>ema50?'sig-buy':'sig-sell');
+  }
+
+  const vol = STATE.ohlcv[STATE.currentPair].slice(-1)[0]?.v || 0;
+  el('ind-vol').textContent = vol>1e6?(vol/1e6).toFixed(2)+'M':(vol/1e3).toFixed(0)+'K';
+
+  // Overall signal
+  let bullScore=0, bearScore=0;
+  if (rsi<40) bullScore++; else if (rsi>60) bearScore++;
+  if (macd&&macd.hist>0) bullScore++; else if (macd) bearScore++;
+  if (bb&&price<bb.lower) bullScore++; else if (bb&&price>bb.upper) bearScore++;
+  if (ema20&&ema50) { if(ema20>ema50) bullScore++; else bearScore++; }
+
+  const sig = el('overall-signal');
+  if (bullScore>bearScore) { sig.textContent=`🟢 BUY SIGNAL (${bullScore}/4 indicators bullish)`; sig.style.color='var(--green)'; }
+  else if (bearScore>bullScore) { sig.textContent=`🔴 SELL SIGNAL (${bearScore}/4 indicators bearish)`; sig.style.color='var(--red)'; }
+  else { sig.textContent=`⚪ NEUTRAL (Mixed signals)`; sig.style.color='var(--text3)'; }
+
+  renderChart();
+}
+
+// =====================================================
+// CHART ENGINE (Canvas Candlesticks)
+// =====================================================
+function renderChart() {
+  const wrap = document.getElementById('main-chart-wrap');
+  const canvas = document.getElementById('main-chart');
+  if (!wrap||!canvas) return;
+  const W = wrap.clientWidth||600;
+  const H = wrap.clientHeight||260;
+  canvas.width = W; canvas.height = H;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  const candles = STATE.ohlcv[STATE.currentPair].slice(-80);
+  if (!candles.length) return;
+
+  const closes = candles.map(c=>c.c);
+  const bb = STATE.showBB ? calcBB(closes,20,2) : null;
+  const ema20arr = calcEMA(closes,20);
+  const ema50arr = calcEMA(closes.length>=50?closes:closes,Math.min(50,closes.length));
+
+  const highs = candles.map(c=>c.h);
+  const lows = candles.map(c=>c.l);
+  let minP = Math.min(...lows);
+  let maxP = Math.max(...highs);
+  if (bb) { minP=Math.min(minP,bb.lower*0.999); maxP=Math.max(maxP,bb.upper*1.001); }
+  const pad=0.05*(maxP-minP);
+  minP-=pad; maxP+=pad;
+
+  const scaleY = v => H - ((v-minP)/(maxP-minP))*H;
+  const cW = Math.max(3, (W/candles.length)*0.7);
+  const cSpace = W/candles.length;
+
+  // Grid
+  ctx.strokeStyle='rgba(24,35,52,0.8)';
+  ctx.lineWidth=1;
+  for (let i=0;i<5;i++) {
+    const y=H*i/4;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+    const price=maxP-(maxP-minP)*i/4;
+    ctx.fillStyle='rgba(74,106,138,0.7)';
+    ctx.font='9px JetBrains Mono';
+    ctx.fillText('$'+price.toFixed(price>100?0:2),4,y-3);
+  }
+
+  // BB bands
+  if (bb && STATE.showBB) {
+    const bbSlice = closes.slice(-20);
+    // Just draw upper/lower/mid as horizontal for last 20 candles
+    const startX = (candles.length-20)*cSpace;
+    ctx.strokeStyle='rgba(124,77,255,0.4)';
+    ctx.lineWidth=1;
+    ctx.setLineDash([4,4]);
+    [[bb.upper,'rgba(255,61,107,0.5)'],[bb.middle,'rgba(124,77,255,0.5)'],[bb.lower,'rgba(0,230,118,0.5)']].forEach(([val,color])=>{
+      ctx.strokeStyle=color;
+      ctx.beginPath();
+      ctx.moveTo(startX,scaleY(val));
+      ctx.lineTo(W,scaleY(val));
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    // Fill between bands
+    ctx.fillStyle='rgba(124,77,255,0.04)';
+    ctx.beginPath();
+    ctx.rect(startX,scaleY(bb.upper),W-startX,scaleY(bb.lower)-scaleY(bb.upper));
+    ctx.fill();
+  }
+
+  // EMA lines
+  const drawLine = (arr,color,dash=[]) => {
+    ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.setLineDash(dash);
+    let started=false;
+    ctx.beginPath();
+    arr.forEach((v,i)=>{
+      if (v===null) return;
+      const x=(candles.length-arr.length+i)*cSpace+cSpace/2;
+      const y=scaleY(v);
+      if (!started){ctx.moveTo(x,y);started=true;}else ctx.lineTo(x,y);
+    });
+    ctx.stroke(); ctx.setLineDash([]);
+  };
+  drawLine(ema20arr,'rgba(0,212,255,0.7)');
+  drawLine(ema50arr,'rgba(255,193,7,0.5)',[3,3]);
+
+  // Candles
+  candles.forEach((c,i) => {
+    const x = i*cSpace + (cSpace-cW)/2;
+    const up = c.c >= c.o;
+    const color = up?'#00e676':'#ff3d6b';
+    ctx.fillStyle=color;
+    ctx.strokeStyle=color;
+    ctx.lineWidth=1;
+
+    // Wick
+    const wickX = i*cSpace+cSpace/2;
+    ctx.beginPath();
+    ctx.moveTo(wickX,scaleY(c.h));
+    ctx.lineTo(wickX,scaleY(c.l));
+    ctx.stroke();
+
+    // Body
+    const bodyTop = scaleY(Math.max(c.o,c.c));
+    const bodyH = Math.max(1, Math.abs(scaleY(c.o)-scaleY(c.c)));
+    ctx.fillRect(x,bodyTop,cW,bodyH);
+  });
+
+  // Trade entry markers
+  STATE.openTrades.filter(t=>t.pair===STATE.currentPair).forEach(t=>{
+    const y=scaleY(t.entry);
+    ctx.strokeStyle=t.dir==='long'?'rgba(0,230,118,0.8)':'rgba(255,61,107,0.8)';
+    ctx.lineWidth=1; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=t.dir==='long'?'var(--green)':'var(--red)';
+    ctx.font='bold 9px JetBrains Mono';
+    ctx.fillText(`ENTRY $${t.entry.toFixed(0)}`,4,y-3);
+  });
+
+  // SUB CHART (MACD or RSI)
+  renderSubChart();
+}
+
+function renderSubChart() {
+  const canvas = document.getElementById('sub-chart');
+  if (!canvas) return;
+  const W = canvas.parentElement?.clientWidth||600;
+  const H = 60;
+  canvas.width=W; canvas.height=H; canvas.style.width=W+'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  if (STATE.showMACD) {
+    const macd = STATE.indicators.macd;
+    if (!macd||!macd.macdLine) { ctx.fillStyle='var(--text3)';ctx.font='10px JetBrains Mono';ctx.fillText('MACD: Computing…',10,30); return; }
+    const hists = macd.macdLine.filter(v=>v!==null).slice(-80).map((v,i,a)=>v-(macd.signalLine[i]||0));
+    const maxH=Math.max(...hists.map(Math.abs),0.0001);
+    const midY=H/2;
+    const cW=W/hists.length;
+    hists.forEach((h,i)=>{
+      const barH=Math.abs(h)/maxH*(H/2-4);
+      ctx.fillStyle=h>0?'rgba(0,230,118,0.7)':'rgba(255,61,107,0.7)';
+      ctx.fillRect(i*cW,h>0?midY-barH:midY,Math.max(1,cW-1),barH);
+    });
+    ctx.strokeStyle='rgba(74,106,138,0.5)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(0,midY); ctx.lineTo(W,midY); ctx.stroke();
+    ctx.fillStyle='var(--text3)'; ctx.font='9px JetBrains Mono';
+    ctx.fillText('MACD Histogram',4,H-4);
+  } else if (STATE.showRSI) {
+    const closes = STATE.priceHistory[STATE.currentPair];
+    const rsiData = [];
+    for (let i=15; i<Math.min(closes.length,95); i++) {
+      const v=calcRSI(closes.slice(i-14,i+1));
+      if (v!==null) rsiData.push(v);
+    }
+    if (!rsiData.length) return;
+    const cW=W/rsiData.length;
+    // zones
+    ctx.fillStyle='rgba(255,61,107,0.06)'; ctx.fillRect(0,0,W,H*(1-70/100));
+    ctx.fillStyle='rgba(0,230,118,0.06)'; ctx.fillRect(0,H*(1-30/100),W,H*0.3);
+    ctx.strokeStyle='rgba(0,212,255,0.7)'; ctx.lineWidth=1.5;
+    ctx.beginPath();
+    rsiData.forEach((v,i)=>{
+      const x=i*cW+cW/2, y=H-(v/100)*H;
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    ctx.fillStyle='var(--text3)'; ctx.font='9px JetBrains Mono';
+    ctx.fillText('RSI(14)',4,H-4);
+  }
+}
+
+// =====================================================
+// TRADING ENGINE
+// =====================================================
+function getActivePairs() {
+  const sel = STATE.strategy.pairs;
+  if (sel==='BTCUSDT'||sel==='ETHUSDT') return [sel];
+  if (sel==='top3') return ['BTCUSDT','ETHUSDT','SOLUSDT'];
+  if (sel==='top5') return PAIRS;
+  return PAIRS;
+}
+
+function checkTradeConditions() {
+  if (!STATE.botActive||STATE.killTriggered) return;
+
+  // Kill switch check
+  const dailyLoss = STATE.todayStartBalance - STATE.balance;
+  const dailyLossPct = (dailyLoss/STATE.todayStartBalance)*100;
+  if (dailyLossPct >= STATE.strategy.kill) {
+    triggerKillSwitch();
+    return;
+  }
+
+  // Check all open trades for SL/TP
+  STATE.openTrades.forEach(trade => {
+    const price = STATE.prices[trade.pair];
+    const pnlPct = trade.dir==='long'
+      ? (price-trade.entry)/trade.entry*100
+      : (trade.entry-price)/trade.entry*100;
+
+    let closeReason = null;
+    if (pnlPct <= -STATE.strategy.sl) closeReason = 'Stop Loss Hit';
+    else if (pnlPct >= STATE.strategy.tp) closeReason = 'Take Profit Hit';
+
+    // Trailing stop
+    if (STATE.strategy.trailing && trade.dir==='long') {
+      const peak = trade.peak||trade.entry;
+      const newPeak = Math.max(peak,price);
+      trade.peak = newPeak;
+      if (price <= newPeak*(1-STATE.strategy.sl/100)) closeReason = 'Trailing Stop';
+    }
+
+    if (closeReason) closeTrade(trade.id, closeReason);
+  });
+
+  // Open new trades based on mode
+  const maxT = STATE.strategy.maxTrades;
+  if (STATE.openTrades.length >= maxT) return;
+
+  const mode = STATE.strategy.mode;
+  const pairs = getActivePairs();
+  pairs.forEach(pair => {
+    if (STATE.openTrades.filter(t=>t.pair===pair).length>0) return;
+    if (STATE.openTrades.length >= maxT) return;
+
+    let signal = null;
+    if (mode==='trend') signal = trendSignal(pair);
+    else if (mode==='scalp') signal = scalpSignal(pair);
+    else if (mode==='dca') signal = dcaSignal(pair);
+    else if (mode==='grid') signal = gridSignal(pair);
+
+    if (signal) proposeTrade(signal);
+  });
+}
+
+function trendSignal(pair) {
+  const closes = STATE.priceHistory[pair];
+  if (closes.length < 55) return null;
+  const rsi = calcRSI(closes.slice(-50));
+  const macd = calcMACD(closes.slice(-100));
+  const ema20arr = calcEMA(closes.slice(-60),20);
+  const ema50arr = calcEMA(closes.slice(-80),50);
+  const ema20 = ema20arr[ema20arr.length-1];
+  const ema50 = ema50arr[ema50arr.length-1];
+  const price = STATE.prices[pair];
+
+  if (!rsi||!macd||!ema20||!ema50) return null;
+
+  // BUY: EMA bullish cross + RSI not overbought + MACD histogram positive
+  if (ema20>ema50 && rsi<65 && rsi>40 && macd.hist>0) {
+    return {pair,dir:'long',entry:price,mode:'trend',
+      reason:`EMA20(${ema20.toFixed(0)}) > EMA50(${ema50.toFixed(0)}), RSI=${rsi.toFixed(1)}, MACD hist=+${macd.hist.toFixed(4)}`};
+  }
+  // SELL/SHORT
+  if (STATE.strategy.shorts && ema20<ema50 && rsi>35 && rsi<60 && macd.hist<0) {
+    return {pair,dir:'short',entry:price,mode:'trend',
+      reason:`EMA20(${ema20.toFixed(0)}) < EMA50(${ema50.toFixed(0)}), RSI=${rsi.toFixed(1)}, MACD bearish`};
+  }
+  return null;
+}
+
+function scalpSignal(pair) {
+  const closes = STATE.priceHistory[pair];
+  if (closes.length < 20) return null;
+  const rsi = calcRSI(closes.slice(-20));
+  const bb = calcBB(closes.slice(-20));
+  const price = STATE.prices[pair];
+  if (!rsi||!bb) return null;
+
+  // Scalp: RSI oversold + price at/below BB lower
+  if (rsi<35 && price<=bb.lower*1.002) {
+    return {pair,dir:'long',entry:price,mode:'scalp',
+      reason:`RSI=${rsi.toFixed(1)} oversold, price at BB lower ($${bb.lower.toFixed(2)}). Quick reversal scalp.`};
+  }
+  if (STATE.strategy.shorts && rsi>65 && price>=bb.upper*0.998) {
+    return {pair,dir:'short',entry:price,mode:'scalp',
+      reason:`RSI=${rsi.toFixed(1)} overbought, price at BB upper. Scalp reversal short.`};
+  }
+  return null;
+}
+
+let dcaLastTime = 0;
+function dcaSignal(pair) {
+  const now = Date.now();
+  const intervalMs = STATE.strategy.dcaInterval * 60000;
+  if (now - dcaLastTime < intervalMs) return null;
+  dcaLastTime = now;
+  const price = STATE.prices[pair];
+  return {pair,dir:'long',entry:price,mode:'dca',
+    sizeOverride: STATE.strategy.dcaAmount,
+    reason:`DCA interval elapsed. Buying $${STATE.strategy.dcaAmount} at market regardless of conditions.`};
+}
+
+function gridSignal(pair) {
+  if (!STATE.strategy.gridLow||!STATE.strategy.gridHigh) return null;
+  const price = STATE.prices[pair];
+  const {gridLow:lo,gridHigh:hi,gridLevels:levels} = STATE.strategy;
+  const step = (hi-lo)/levels;
+
+  // Find nearest grid level below price
+  for (let i=0; i<levels; i++) {
+    const level = lo + i*step;
+    const nextLevel = level + step;
+    if (price>=level && price<=nextLevel) {
+      // Check no trade already at this grid
+      const alreadyAt = STATE.openTrades.some(t=>t.pair===pair&&Math.abs(t.entry-level)<step*0.3);
+      if (!alreadyAt) {
+        return {pair,dir:'long',entry:price,mode:'grid',
+          reason:`Grid level hit at $${level.toFixed(2)}. Buying grid slot ${i+1}/${levels}. Target: $${nextLevel.toFixed(2)}`};
+      }
+    }
+  }
+  return null;
+}
+
+function proposeTrade(signal) {
+  const size = signal.sizeOverride || (STATE.balance * STATE.strategy.posSize/100);
+  const slPrice = signal.dir==='long'
+    ? signal.entry*(1-STATE.strategy.sl/100)
+    : signal.entry*(1+STATE.strategy.sl/100);
+  const tpPrice = signal.dir==='long'
+    ? signal.entry*(1+STATE.strategy.tp/100)
+    : signal.entry*(1-STATE.strategy.tp/100);
+
+  const trade = {
+    id: STATE.tradeId++,
+    pair: signal.pair,
+    dir: signal.dir,
+    mode: signal.mode,
+    size,
+    entry: signal.entry,
+    slPrice, tpPrice,
+    reason: signal.reason,
+    proposedAt: Date.now()
+  };
+
+  if (STATE.strategy.approval==='auto' || STATE.strategy.approval==='notify') {
+    executeTrade(trade);
+    if (STATE.strategy.approval==='notify') toast(`🤖 Trade opened: ${trade.dir.toUpperCase()} ${PAIR_LABELS[trade.pair]}`, 'ok');
+  } else {
+    // Manual approval
+    STATE.pendingTrades.push(trade);
+    updatePendingBadge();
+    updatePendingPage();
+    toast(`⏳ New trade pending approval: ${PAIR_LABELS[trade.pair]}`, 'warn');
+  }
+}
+
+function executeTrade(trade) {
+  trade.openedAt = Date.now();
+  trade.peak = trade.entry;
+  STATE.openTrades.push(trade);
+  updateOpenBadge();
+  updateOpenTradesUI();
+  toast(`✅ Trade opened: ${trade.dir==='long'?'🟢 LONG':'🔴 SHORT'} ${PAIR_LABELS[trade.pair]} @ $${trade.entry.toFixed(2)}`, 'ok');
+}
+
+function closeTrade(id, reason='Manual') {
+  const idx = STATE.openTrades.findIndex(t=>t.id===id);
+  if (idx===-1) return;
+  const trade = STATE.openTrades.splice(idx,1)[0];
+  const exitPrice = STATE.prices[trade.pair];
+  const pnlPct = trade.dir==='long'
+    ? (exitPrice-trade.entry)/trade.entry*100
+    : (trade.entry-exitPrice)/trade.entry*100;
+  const pnlDollar = trade.size * pnlPct/100;
+
+  STATE.balance += pnlDollar;
+  STATE.equityCurve.push(STATE.balance);
+
+  const closed = {...trade, exit:exitPrice, pnlPct, pnlDollar, closedAt:Date.now(), closeReason:reason};
+  STATE.closedTrades.push(closed);
+
+  updateOpenBadge();
+  updateOpenTradesUI();
+  updateWalletBalance();
+  updatePerformanceStats();
+
+  const emoji = pnlDollar>=0?'✅':'❌';
+  toast(`${emoji} Trade closed: ${PAIR_LABELS[trade.pair]} | ${pnlDollar>=0?'+':''}$${pnlDollar.toFixed(2)} (${pnlPct.toFixed(2)}%) — ${reason}`, pnlDollar>=0?'ok':'err');
+}
+
+function closeAllTrades() {
+  const ids = STATE.openTrades.map(t=>t.id);
+  ids.forEach(id => closeTrade(id, 'Manual Close'));
+}
+
+function pauseBot() {
+  STATE.botActive = false;
+  updateBotUI();
+  toast('Bot paused. No new trades will open.', 'warn');
+}
+
+function triggerKillSwitch() {
+  STATE.killTriggered = true;
+  STATE.botActive = false;
+  updateBotUI();
+  closeAllTrades();
+  toast('🚨 KILL SWITCH TRIGGERED! Daily loss limit reached. All trades closed. Bot stopped.', 'err');
+}
+
+// =====================================================
+// PENDING APPROVAL UI
+// =====================================================
+function updatePendingPage() {
+  const container = document.getElementById('pending-container');
+  if (!container) return;
+  if (!STATE.pendingTrades.length) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text3);padding:40px;font-family:var(--mono);font-size:13px">No pending trades. Bot is scanning markets…</div>';
+    return;
+  }
+  container.innerHTML = STATE.pendingTrades.map(t => `
+    <div class="pending-trade" id="pt-${t.id}">
+      <div class="pt-header">
+        <div>
+          <div class="pt-title">${t.dir==='long'?'🟢 LONG':'🔴 SHORT'} ${PAIR_LABELS[t.pair]}</div>
+          <div class="pt-meta">${t.mode.toUpperCase()} • ${timeSince(t.proposedAt)}</div>
+        </div>
+        <span class="badge badge-pending">PENDING</span>
+      </div>
+      <div class="pt-params">
+        <div class="pt-param"><div class="k">Trade Size</div><div class="v">$${t.size.toFixed(0)}</div></div>
+        <div class="pt-param"><div class="k">Entry</div><div class="v">$${t.entry.toFixed(2)}</div></div>
+        <div class="pt-param"><div class="k" style="color:var(--red)">Stop Loss</div><div class="v" style="color:var(--red)">$${t.slPrice.toFixed(2)}</div></div>
+        <div class="pt-param"><div class="k" style="color:var(--green)">Take Profit</div><div class="v" style="color:var(--green)">$${t.tpPrice.toFixed(2)}</div></div>
+      </div>
+      <div class="pt-reason">🧠 AI Reasoning: ${t.reason}</div>
+      <div class="pt-actions">
+        <button class="btn btn-green" onclick="approveTrade(${t.id})" style="flex:1">✅ Approve & Execute</button>
+        <button class="btn btn-red" onclick="rejectTrade(${t.id})" style="flex:1">❌ Reject</button>
+        <button class="btn btn-ghost btn-sm" onclick="nav('ai');sendQ('Explain this trade: ${t.dir} ${PAIR_LABELS[t.pair]} — ${t.reason.replace(/'/g,'')}')">💬 Discuss</button>
+      </div>
+    </div>`).join('');
+}
+
+function approveTrade(id) {
+  const idx = STATE.pendingTrades.findIndex(t=>t.id===id);
+  if (idx===-1) return;
+  const trade = STATE.pendingTrades.splice(idx,1)[0];
+  executeTrade(trade);
+  updatePendingBadge();
+  updatePendingPage();
+}
+function rejectTrade(id) {
+  STATE.pendingTrades = STATE.pendingTrades.filter(t=>t.id!==id);
+  updatePendingBadge();
+  updatePendingPage();
+  toast('Trade rejected.','warn');
+}
+function approveAll() { [...STATE.pendingTrades].forEach(t=>approveTrade(t.id)); }
+function rejectAll() { STATE.pendingTrades=[]; updatePendingBadge(); updatePendingPage(); toast('All pending trades rejected.','warn'); }
+
+// =====================================================
+// OPEN TRADES UI
+// =====================================================
+function updateOpenTradesPnL() {
+  STATE.openTrades.forEach(trade => {
+    const price = STATE.prices[trade.pair];
+    const pnlPct = trade.dir==='long'
+      ? (price-trade.entry)/trade.entry*100
+      : (trade.entry-price)/trade.entry*100;
+    trade.currentPnlPct = pnlPct;
+    trade.currentPnlDollar = trade.size*pnlPct/100;
+  });
+  updateOpenTradesUI();
+  updateDashStats();
+}
+
+function updateOpenTradesUI() {
+  const tbody = document.getElementById('open-trades-tbody');
+  const tbody2 = document.getElementById('trades-open-tbody');
+  if (!tbody) return;
+
+  if (!STATE.openTrades.length) {
+    const empty='<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:20px">No open positions</td></tr>';
+    tbody.innerHTML=empty;
+    if(tbody2) tbody2.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--text3);padding:20px">No open positions</td></tr>';
+    return;
+  }
+
+  const rows = STATE.openTrades.map(t => {
+    const price = STATE.prices[t.pair];
+    const pnl = t.currentPnlDollar||0;
+    const pnlPct = t.currentPnlPct||0;
+    const cls = pnl>=0?'up':'dn';
+    const dur = timeSince(t.openedAt||Date.now());
+    return `<tr>
+      <td><strong>${PAIR_LABELS[t.pair]}</strong></td>
+      <td><span class="badge badge-${t.mode}">${t.mode.toUpperCase()}</span></td>
+      <td><span class="badge badge-${t.dir}">${t.dir.toUpperCase()}</span></td>
+      <td>$${t.size.toFixed(0)}</td>
+      <td>$${t.entry.toFixed(price>100?2:4)}</td>
+      <td class="${pnl>=0?'up':'dn'}">$${price.toFixed(price>100?2:4)}</td>
+      <td class="dn">$${t.slPrice.toFixed(price>100?2:4)}</td>
+      <td class="up">$${t.tpPrice.toFixed(price>100?2:4)}</td>
+      <td class="${cls}">${pnl>=0?'+':''}$${pnl.toFixed(2)}</td>
+      <td class="${cls}">${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%</td>
+      <td style="color:var(--text3)">${dur}</td>
+      <td><button class="btn btn-ghost btn-xs" onclick="closeTrade(${t.id},'Manual')">Close</button></td>
+    </tr>`;
+  }).join('');
+
+  tbody.innerHTML=rows;
+  if(tbody2) tbody2.innerHTML=rows.replace('colspan="11"','colspan="12"');
+}
+
+function updateOpenBadge() {
+  el('open-count').textContent = STATE.openTrades.length;
+  el('dash-open').textContent = STATE.openTrades.length;
+  el('dash-open-sub').textContent = STATE.openTrades.length
+    ? `${STATE.openTrades.filter(t=>t.dir==='long').length}L / ${STATE.openTrades.filter(t=>t.dir==='short').length}S`
+    : 'No active trades';
+}
+function updatePendingBadge() {
+  el('pending-count').textContent = STATE.pendingTrades.length;
+}
+
+// =====================================================
+// DASHBOARD STATS
+// =====================================================
+function updateDashStats() {
+  const totalPnl = STATE.balance - STATE.startBalance;
+  const totalPct = (totalPnl/STATE.startBalance)*100;
+  const todayPnl = STATE.balance - STATE.todayStartBalance;
+  const todayPct = (todayPnl/STATE.todayStartBalance)*100;
+
+  const fmt$ = v=>`${v>=0?'+':''}$${Math.abs(v).toFixed(2)}`;
+  const fmtP = v=>`${v>=0?'+':''}${v.toFixed(2)}%`;
+
+  el('dash-balance').textContent = '$'+STATE.balance.toFixed(2);
+  el('dash-balance').className = 'stat-val '+(totalPnl>=0?'up':'dn');
+  el('dash-pnl').innerHTML = `<span class="${totalPnl>=0?'up':'dn'}">${fmt$(totalPnl)} (${fmtP(totalPct)})</span>`;
+  el('dash-today').textContent = fmt$(todayPnl);
+  el('dash-today').className = 'stat-val '+(todayPnl>=0?'up':'dn');
+  el('dash-today-pct').innerHTML = `<span class="${todayPnl>=0?'up':'dn'}">${fmtP(todayPct)}</span>`;
+
+  // Win rate
+  const wins = STATE.closedTrades.filter(t=>t.pnlDollar>=0).length;
+  const total = STATE.closedTrades.length;
+  el('dash-wr').textContent = total?`${((wins/total)*100).toFixed(0)}%`:'—';
+  el('dash-wr-sub').textContent = total?`${wins}W / ${total-wins}L of ${total}`:'No trades yet';
+  el('dash-wr').className = 'stat-val '+(total&&wins/total>0.5?'up':'dn');
+
+  // Sidebar
+  el('sb-balance').textContent = '$'+STATE.balance.toFixed(2);
+  el('sb-pnl').innerHTML = `<span class="${totalPnl>=0?'up':'dn'}">${fmt$(totalPnl)} (${fmtP(totalPct)})</span>`;
+  el('wallet-total').textContent = '$'+STATE.balance.toFixed(2);
+  el('wallet-btc-eq').textContent = `≈ ${(STATE.balance/STATE.prices.BTCUSDT).toFixed(6)} BTC`;
+}
+
+function updateDashboardPrices() {
+  updateDashStats();
+  updateOpenTradesPnL();
+}
+
+function updateWalletBalance() {
+  updateDashStats();
+  // Update wallet assets table
+  const assetsTbody = document.getElementById('wallet-assets');
+  if (assetsTbody) {
+    const usdt = STATE.balance;
+    assetsTbody.innerHTML = `
+      <tr><td><strong>USDT</strong></td><td>${usdt.toFixed(2)}</td><td class="up">$${usdt.toFixed(2)}</td><td>100%</td></tr>`;
+  }
+}
+
+// =====================================================
+// PERFORMANCE STATS
+// =====================================================
+function updatePerformanceStats() {
+  const trades = STATE.closedTrades;
+  const total = trades.length;
+  const wins = trades.filter(t=>t.pnlDollar>=0).length;
+  const totalPnl = trades.reduce((s,t)=>s+t.pnlDollar,0);
+  const avgWin = wins?trades.filter(t=>t.pnlDollar>=0).reduce((s,t)=>s+t.pnlDollar,0)/wins:0;
+  const avgLoss = (total-wins)?trades.filter(t=>t.pnlDollar<0).reduce((s,t)=>s+Math.abs(t.pnlDollar),0)/(total-wins):0;
+
+  const set = id=>v=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+  set('perf-total')(total);
+  set('perf-wr')(total?`${((wins/total)*100).toFixed(1)}%`:'—');
+  set('perf-pnl')(`${totalPnl>=0?'+':''}$${totalPnl.toFixed(2)}`);
+  set('perf-ratio')(avgLoss?`$${avgWin.toFixed(2)} / $${avgLoss.toFixed(2)}`:'—');
+
+  // By mode
+  const byMode = {};
+  const byPair = {};
+  trades.forEach(t=>{
+    if(!byMode[t.mode]) byMode[t.mode]={wins:0,total:0,pnl:0};
+    byMode[t.mode].total++; if(t.pnlDollar>=0)byMode[t.mode].wins++;
+    byMode[t.mode].pnl+=t.pnlDollar;
+    if(!byPair[t.pair]) byPair[t.pair]={wins:0,total:0,pnl:0};
+    byPair[t.pair].total++; if(t.pnlDollar>=0)byPair[t.pair].wins++;
+    byPair[t.pair].pnl+=t.pnlDollar;
+  });
+
+  const modeEl=document.getElementById('perf-by-mode');
+  if(modeEl) modeEl.innerHTML = total?Object.entries(byMode).map(([m,d])=>
+    `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--b1)">
+      <span style="font-family:var(--mono)">${m.toUpperCase()}</span>
+      <span>${((d.wins/d.total)*100).toFixed(0)}% WR</span>
+      <span class="${d.pnl>=0?'up':'dn'}">${d.pnl>=0?'+':''}$${d.pnl.toFixed(2)}</span>
+    </div>`).join(''):'<div style="padding:12px;color:var(--text3)">No data yet</div>';
+
+  const pairEl=document.getElementById('perf-by-pair');
+  if(pairEl) pairEl.innerHTML = total?Object.entries(byPair).map(([p,d])=>
+    `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--b1)">
+      <span style="font-family:var(--mono)">${PAIR_LABELS[p]}</span>
+      <span>${d.total} trades</span>
+      <span class="${d.pnl>=0?'up':'dn'}">${d.pnl>=0?'+':''}$${d.pnl.toFixed(2)}</span>
+    </div>`).join(''):'<div style="padding:12px;color:var(--text3)">No data yet</div>';
+
+  // Equity chart
+  renderEquityChart();
+
+  // History table
+  const histTbody = document.getElementById('trades-hist-tbody');
+  if (histTbody) {
+    if (!trades.length) { histTbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">No completed trades yet</td></tr>'; return; }
+    histTbody.innerHTML = [...trades].reverse().slice(0,50).map(t=>`<tr>
+      <td>${new Date(t.closedAt).toLocaleTimeString()}</td>
+      <td>${PAIR_LABELS[t.pair]}</td>
+      <td><span class="badge badge-${t.mode}">${t.mode.toUpperCase()}</span></td>
+      <td><span class="badge badge-${t.dir}">${t.dir.toUpperCase()}</span></td>
+      <td>$${t.entry.toFixed(2)}</td>
+      <td>$${t.exit.toFixed(2)}</td>
+      <td class="${t.pnlDollar>=0?'up':'dn'}">${t.pnlDollar>=0?'+':''}$${t.pnlDollar.toFixed(2)}</td>
+      <td class="${t.pnlPct>=0?'up':'dn'}">${t.pnlPct>=0?'+':''}${t.pnlPct.toFixed(2)}%</td>
+      <td style="color:var(--text3);font-size:10px">${t.closeReason}</td>
+    </tr>`).join('');
+  }
+}
+
+function renderEquityChart() {
+  const canvas=document.getElementById('equity-chart');
+  if(!canvas) return;
+  const W=canvas.parentElement?.clientWidth||500;
+  const H=180;
+  canvas.width=W; canvas.height=H; canvas.style.width=W+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const data=STATE.equityCurve.slice(-100);
+  if(data.length<2){ctx.fillStyle='var(--text3)';ctx.font='11px JetBrains Mono';ctx.fillText('No equity data yet',W/2-60,H/2);return;}
+  const mn=Math.min(...data)*0.99,mx=Math.max(...data)*1.01;
+  const sy=v=>H-((v-mn)/(mx-mn))*H;
+  // Gradient fill
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(0,212,255,0.3)');
+  grad.addColorStop(1,'rgba(0,212,255,0)');
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.moveTo(0,H);
+  data.forEach((v,i)=>ctx.lineTo(i*W/(data.length-1),sy(v)));
+  ctx.lineTo(W,H); ctx.closePath(); ctx.fill();
+  // Line
+  ctx.strokeStyle='var(--cyan)'; ctx.lineWidth=2;
+  ctx.beginPath();
+  data.forEach((v,i)=>i===0?ctx.moveTo(0,sy(v)):ctx.lineTo(i*W/(data.length-1),sy(v)));
+  ctx.stroke();
+  // B&H comparison
+  ctx.strokeStyle='rgba(255,193,7,0.5)'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(0,sy(data[0])); ctx.lineTo(W,sy(data[data.length-1])); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+// =====================================================
+// BACKTESTING ENGINE
+// =====================================================
+function runBacktest() {
+  const btn=document.getElementById('run-bt-btn');
+  btn.textContent='⏳ Running…'; btn.disabled=true;
+
+  setTimeout(()=>{
+    const pair = document.getElementById('bt-pair').value.replace('/','');
+    const mode = document.getElementById('bt-mode').value;
+    const capital = parseFloat(document.getElementById('bt-capital').value)||1000;
+    const days = parseInt(document.getElementById('bt-period').value)||30;
+    const sl = parseFloat(document.getElementById('bt-sl').value)||2;
+    const tp = parseFloat(document.getElementById('bt-tp').value)||4;
+    const fee = parseFloat(document.getElementById('bt-fee').value)||0.1;
+
+    // Generate synthetic OHLCV for the period
+    const pairKey = pair+'USDT';
+    const numCandles = days*24;
+    const basePrice = {BTCUSDT:60000,ETHUSDT:3000,SOLUSDT:120}[pairKey]||1000;
+    const vol = VOL[pairKey]||0.001;
+    const candles=[];
+    let p=basePrice;
+    for(let i=0;i<numCandles;i++){
+      const o=p;
+      const h=o*(1+Math.abs((Math.random()-.5)*vol*3));
+      const l=o*(1-Math.abs((Math.random()-.5)*vol*3));
+      const c=o*(1+(Math.random()-.499)*vol*2);
+      candles.push({o,h,l,c,v:Math.random()*1e6+5e5});
+      p=c;
+    }
+
+    // Run simulation
+    const closes=candles.map(c=>c.c);
+    let balance=capital, inTrade=false, entry=0, dir='long';
+    let wins=0,losses=0,totalTrades=0,totalFees=0;
+    const equity=[capital];
+    const log=[];
+
+    for(let i=55;i<candles.length;i++){
+      const slice=closes.slice(0,i+1);
+      const price=closes[i];
+
+      if(inTrade){
+        const pnlPct=dir==='long'?(price-entry)/entry*100:(entry-price)/entry*100;
+        let closeReason=null;
+        if(pnlPct<=-sl){closeReason='SL';losses++;}
+        else if(pnlPct>=tp){closeReason='TP';wins++;}
+        if(closeReason){
+          const pnl=balance*(pnlPct/100);
+          const feeAmt=balance*(fee/100)*2;
+          balance+=pnl-feeAmt; totalFees+=feeAmt; totalTrades++;
+          inTrade=false;
+          equity.push(balance);
+          log.push({i,price,closeReason,pnl:pnl-feeAmt});
+        }
+      }
+
+      if(!inTrade){
+        let signal=false;
+        if(mode==='trend'&&slice.length>55){
+          const rsi=calcRSI(slice.slice(-50));
+          const macd=calcMACD(slice.slice(-100));
+          const ema20=calcEMA(slice.slice(-60),20);
+          const ema50=calcEMA(slice.slice(-80),50);
+          const e20=ema20[ema20.length-1],e50=ema50[ema50.length-1];
+          if(rsi&&macd&&e20&&e50&&e20>e50&&rsi<65&&rsi>40&&macd.hist>0){signal=true;dir='long';}
+        } else if(mode==='scalp'){
+          const rsi=calcRSI(slice.slice(-20));
+          const bb=calcBB(slice.slice(-20));
+          if(rsi&&bb&&rsi<35&&price<=bb.lower*1.003){signal=true;dir='long';}
+        } else if(mode==='dca'){
+          if(i%24===0){signal=true;dir='long';} // Daily
+        } else if(mode==='grid'){
+          const gridStep=(closes[closes.length-1]*1.2-closes[closes.length-1]*0.8)/10;
+          if(i%12===0){signal=true;dir='long';}
+        }
+        if(signal){entry=price;inTrade=true;}
+      }
+    }
+
+    // Close any open trade
+    if(inTrade){
+      const price=closes[closes.length-1];
+      const pnlPct=dir==='long'?(price-entry)/entry*100:(entry-price)/entry*100;
+      const pnl=balance*(pnlPct/100);
+      const feeAmt=balance*(fee/100);
+      balance+=pnl-feeAmt; totalFees+=feeAmt; totalTrades++;
+      if(pnlPct>=0)wins++;else losses++;
+      equity.push(balance);
+    }
+
+    const totalReturn=(balance-capital)/capital*100;
+    const bh=(closes[closes.length-1]-closes[0])/closes[0]*100;
+    const wr=totalTrades?((wins/totalTrades)*100).toFixed(1):0;
+    const maxDD=calcMaxDD(equity);
+
+    document.getElementById('bt-results').innerHTML=`
+      <div class="bt-results">
+        <div class="stat"><div class="stat-label">Final Balance</div><div class="stat-val ${balance>capital?'up':'dn'}">$${balance.toFixed(2)}</div></div>
+        <div class="stat"><div class="stat-label">Total Return</div><div class="stat-val ${totalReturn>0?'up':'dn'}">${totalReturn>0?'+':''}${totalReturn.toFixed(2)}%</div></div>
+        <div class="stat"><div class="stat-label">Win Rate</div><div class="stat-val">${wr}%</div></div>
+        <div class="stat"><div class="stat-label">Buy & Hold</div><div class="stat-val ${bh>0?'up':'dn'}">${bh>0?'+':''}${bh.toFixed(2)}%</div></div>
+      </div>
+      <div class="g2" style="margin-top:8px">
+        <div class="stat"><div class="stat-label">Total Trades</div><div class="stat-val">${totalTrades}</div></div>
+        <div class="stat"><div class="stat-label">Max Drawdown</div><div class="stat-val dn">${maxDD.toFixed(2)}%</div></div>
+        <div class="stat"><div class="stat-label">Wins / Losses</div><div class="stat-val">${wins}W / ${losses}L</div></div>
+        <div class="stat"><div class="stat-label">Fees Paid</div><div class="stat-val dn">$${totalFees.toFixed(2)}</div></div>
+      </div>
+      <div class="info-box" style="margin-top:8px">
+        ${totalReturn>bh?`✅ Strategy outperformed Buy & Hold by <strong>${(totalReturn-bh).toFixed(2)}%</strong>`:`⚠️ Strategy underperformed Buy & Hold by <strong>${(bh-totalReturn).toFixed(2)}%</strong>. Consider adjusting SL/TP or timeframe.`}
+      </div>`;
+
+    // BT Chart
+    renderBTChart(equity, closes, capital);
+
+    // Log
+    document.getElementById('bt-log').innerHTML = log.slice(-30).reverse().map(l=>
+      `<div style="padding:3px 0;border-bottom:1px solid var(--b1);display:flex;gap:8px">
+        <span style="color:var(--text3)">C${l.i}</span>
+        <span style="color:${l.closeReason==='TP'?'var(--green)':'var(--red)'}">●${l.closeReason}</span>
+        <span class="${l.pnl>=0?'up':'dn'}">${l.pnl>=0?'+':''}$${l.pnl.toFixed(2)}</span>
+      </div>`).join('')||'<div style="padding:8px;color:var(--text3)">No trades executed</div>';
+
+    btn.textContent='▶ Run Backtest'; btn.disabled=false;
+  }, 100);
+}
+
+function calcMaxDD(equity) {
+  let peak=equity[0],maxDD=0;
+  equity.forEach(v=>{ peak=Math.max(peak,v); maxDD=Math.max(maxDD,(peak-v)/peak*100); });
+  return maxDD;
+}
+
+function renderBTChart(equity,closes,capital) {
+  const canvas=document.getElementById('bt-chart');
+  if(!canvas) return;
+  const W=canvas.parentElement?.clientWidth||500;
+  const H=220;
+  canvas.width=W; canvas.height=H; canvas.style.width=W+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  const bhEquity=closes.map(c=>(c/closes[0])*capital);
+  const allVals=[...equity,...bhEquity];
+  const mn=Math.min(...allVals)*0.98,mx=Math.max(...allVals)*1.02;
+  const sy=v=>H-((v-mn)/(mx-mn))*H;
+
+  // Grid
+  ctx.strokeStyle='rgba(24,35,52,0.8)'; ctx.lineWidth=1;
+  for(let i=0;i<4;i++){ const y=H*i/3; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  // Strategy equity
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(0,212,255,0.25)'); grad.addColorStop(1,'rgba(0,212,255,0)');
+  ctx.fillStyle=grad;
+  ctx.beginPath(); ctx.moveTo(0,H);
+  equity.forEach((v,i)=>ctx.lineTo(i*W/(equity.length-1),sy(v)));
+  ctx.lineTo(W,H); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='var(--cyan)'; ctx.lineWidth=2; ctx.setLineDash([]);
+  ctx.beginPath();
+  equity.forEach((v,i)=>i===0?ctx.moveTo(0,sy(v)):ctx.lineTo(i*W/(equity.length-1),sy(v)));
+  ctx.stroke();
+
+  // Buy & Hold
+  ctx.strokeStyle='rgba(255,193,7,0.6)'; ctx.lineWidth=1.5; ctx.setLineDash([5,3]);
+  ctx.beginPath();
+  bhEquity.forEach((v,i)=>i===0?ctx.moveTo(0,sy(v)):ctx.lineTo(i*W/(bhEquity.length-1),sy(v)));
+  ctx.stroke(); ctx.setLineDash([]);
+
+  // Legend
+  ctx.fillStyle='var(--cyan)'; ctx.font='bold 10px JetBrains Mono'; ctx.fillText('— Strategy',8,14);
+  ctx.fillStyle='var(--yellow)'; ctx.fillText('- - Buy & Hold',8,26);
+}
+
+// =====================================================
+// GEMINI AI ADVISOR
+// =====================================================
+function buildSystemPrompt() {
+  const ind = STATE.indicators;
+  const openPos = STATE.openTrades.map(t=>`${t.dir} ${PAIR_LABELS[t.pair]} @ $${t.entry.toFixed(2)} (${t.currentPnlPct?.toFixed(2)||0}% PnL)`).join(', ')||'None';
+  return `You are APEX AI, an expert crypto trading advisor embedded in the APEX automated trading platform. You help users understand trading strategies, indicators, and make informed decisions.
+
+CURRENT PLATFORM STATE:
+- Mode: ${STATE.mode.toUpperCase()} (${STATE.mode==='demo'?'Demo simulation':'Live trading'})
+- Bot: ${STATE.botActive?'ACTIVE':'INACTIVE'}
+- Balance: $${STATE.balance.toFixed(2)}
+- Open Positions: ${openPos}
+- Strategy: ${STATE.strategy.mode} mode, SL: ${STATE.strategy.sl}%, TP: ${STATE.strategy.tp}%, Position size: ${STATE.strategy.posSize}%
+- Current Pair: ${PAIR_LABELS[STATE.currentPair]}
+- RSI: ${ind.rsi?.toFixed(1)||'N/A'}
+- MACD: ${ind.macd?.hist>0?'Bullish':'Bearish'}
+- BB: ${ind.bb?`Price vs bands: ${STATE.prices[STATE.currentPair]>ind.bb.upper?'Above upper':'Below lower':ind.bb?'In band':'N/A'}`:'N/A'}
+
+YOUR ROLE:
+- Explain everything in plain English — assume the user may be a complete beginner
+- When proposing strategies, be specific with numbers (exact SL%, TP%, position size)
+- Always include risk warnings
+- For strategy proposals, format them clearly so the user understands what they're approving
+- Be honest about risks and never guarantee profits
+- Available trading modes: Trend Following, DCA, Grid Trading, Scalping
+- When asked to analyze, reference the actual indicator data above`;
+}
+
+async function callGemini(userMessage) {
+  const key = STATE.geminiKey;
+  if (!key) {
+    return `⚠️ No Gemini API key set. Go to Settings → AI & API or click "Set API Key" above to add your key from aistudio.google.com.
+
+In the meantime, here's a general answer:
+
+${getBuiltinResponse(userMessage)}`;
+  }
+
+  const model = STATE.geminiModel;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+
+  const messages = STATE.chatHistory.map(m=>({
+    role: m.role==='ai'?'model':'user',
+    parts: [{text:m.content}]
+  }));
+  messages.push({role:'user', parts:[{text:userMessage}]});
+
+  const body = {
+    system_instruction: {parts:[{text:buildSystemPrompt()}]},
+    contents: messages,
+    generationConfig: {temperature:0.7, maxOutputTokens:1024}
+  };
+
+  const r = await fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+
+  if (!r.ok) {
+    const err = await r.text();
+    if (r.status===400) return `❌ API Error: Invalid request or model name. Check your API key is correct. Error: ${err.substring(0,200)}`;
+    if (r.status===403) return `❌ API key unauthorized. Make sure you've enabled the Generative Language API in Google Cloud Console.`;
+    return `❌ Gemini API error (${r.status}): ${err.substring(0,300)}`;
+  }
+
+  const data = await r.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '❌ No response from Gemini.';
+}
+
+function getBuiltinResponse(msg) {
+  const m = msg.toLowerCase();
+  if (m.includes('rsi')) return "RSI (Relative Strength Index) measures momentum on a 0–100 scale. Below 30 = oversold (potential buy). Above 70 = overbought (potential sell). Most traders wait for RSI to cross back from extreme zones before entering.";
+  if (m.includes('dca')) return "DCA (Dollar Cost Averaging) means buying a fixed dollar amount at regular intervals regardless of price. Instead of trying to time the market, you average your entry price over time. Less risky than lump-sum investing.";
+  if (m.includes('grid')) return "Grid trading places buy orders at regular price intervals below market and sell orders above. You profit from price oscillations within a range. Best in sideways, ranging markets. Loses in strong trends.";
+  if (m.includes('scalp')) return "Scalping makes many small trades (dozens per day) targeting 0.3–1% each. Uses tight stop losses and very short timeframes (1m, 5m). Requires low fees and fast execution. Higher activity but smaller individual risk.";
+  if (m.includes('cash out')||m.includes('withdraw')) return "To cash out: 1) Pause the bot. 2) Close all open positions. 3) On your exchange, sell crypto to USDT/USD. 4) Withdraw to your bank account (1–5 business days). Remember crypto gains may be taxable.";
+  if (m.includes('risk level')) return "Level 1 (Ultra Safe): SL 1%, TP 2%, tiny positions. Level 2 (Conservative): SL 2%, TP 4%, small positions. Level 3 (Balanced): SL 3%, TP 6%, medium positions. Level 4 (Aggressive): SL 5%, TP 15%. Level 5 (Degen): Maximum risk, only money you can afford to lose.";
+  return "I can help you with trading strategies, indicator explanations, risk management, and platform settings. Add your Gemini API key in Settings for full AI capabilities, or ask me any specific question!";
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value='';
+  appendMsg('user', msg);
+  STATE.chatHistory.push({role:'user',content:msg});
+
+  const typing=appendMsg('ai','<span style="color:var(--text3)">Thinking…</span>',true);
+  try {
+    const reply = await callGemini(msg);
+    typing.querySelector('.msg-bubble').innerHTML = formatAIResponse(reply);
+    STATE.chatHistory.push({role:'ai',content:reply});
+    if(STATE.chatHistory.length>20) STATE.chatHistory=STATE.chatHistory.slice(-20);
+  } catch(e) {
+    typing.querySelector('.msg-bubble').innerHTML = `❌ Error: ${e.message}. Check your API key.`;
+  }
+}
+
+async function sendQ(q) {
+  document.getElementById('chat-input').value=q;
+  await sendChat();
+}
+
+function appendMsg(role, html, returnEl=false) {
+  const area=document.getElementById('chat-area');
+  const d=document.createElement('div');
+  d.className=`msg-wrap ${role}`;
+  d.innerHTML=`<div class="msg-av">${role==='ai'?'🧠':'👤'}</div><div class="msg-bubble">${html}</div>`;
+  area.appendChild(d);
+  area.scrollTop=area.scrollHeight;
+  return returnEl?d:null;
+}
+
+function formatAIResponse(text) {
+  // Basic markdown-like formatting
+  return text
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .replace(/`(.*?)`/g,'<code style="background:var(--bg);padding:1px 4px;border-radius:3px;font-family:var(--mono)">$1</code>')
+    .replace(/\n\n/g,'<br><br>')
+    .replace(/\n/g,'<br>');
+}
+
+function chatKey(e) {
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}
+}
+
+function saveAPIKey() {
+  const k=document.getElementById('gemini-key-input')?.value.trim();
+  const m=document.getElementById('gemini-model')?.value;
+  if(k){STATE.geminiKey=k;localStorage.setItem('gemini_key',k);toast('Gemini API key saved!','ok');}
+  if(m){STATE.geminiModel=m;localStorage.setItem('gemini_model',m);}
+  el('ai-status-line').textContent=STATE.geminiKey?`Connected: ${STATE.geminiModel}`:'Enter your Gemini API key in Settings';
+}
+
+function saveAPIKeyModal() {
+  const k=document.getElementById('modal-gemini-key')?.value.trim();
+  const m=document.getElementById('modal-gemini-model')?.value;
+  if(k){STATE.geminiKey=k;localStorage.setItem('gemini_key',k);}
+  if(m){STATE.geminiModel=m;localStorage.setItem('gemini_model',m);}
+  closeModal('apikey');
+  el('ai-status-line').textContent=STATE.geminiKey?`Connected: ${STATE.geminiModel}`:'Enter your Gemini API key';
+  toast('AI Advisor activated!','ok');
+  appendMsg('ai','Hello! I\'m your APEX AI Trading Advisor powered by Gemini. I have access to your current portfolio, indicator readings, and strategy settings. Ask me anything — what would you like help with today?');
+}
+
+// =====================================================
+// BOT CONTROL
+// =====================================================
+function toggleBot() {
+  STATE.botActive = !STATE.botActive;
+  STATE.killTriggered = false;
+  updateBotUI();
+  if (STATE.botActive) toast('🤖 Bot activated! Scanning markets…','ok');
+  else toast('Bot paused.','warn');
+}
+
+function updateBotUI() {
+  const pill=el('bot-pill');
+  const btn=el('bot-toggle-btn');
+  if (STATE.botActive) {
+    pill.className='status-pill live'; pill.innerHTML='<span class="status-dot"></span><span id="bot-pill-txt">BOT LIVE</span>';
+    btn.textContent='⏸ Pause Bot'; btn.className='btn btn-yellow btn-sm';
+  } else {
+    pill.className='status-pill stopped'; pill.innerHTML='<span class="status-dot"></span><span id="bot-pill-txt">BOT OFF</span>';
+    btn.textContent='▶ Start Bot'; btn.className='btn btn-green btn-sm';
+  }
+}
+
+// =====================================================
+// STRATEGY BUILDER
+// =====================================================
+function selectMode(m) {
+  ['trend','dca','grid','scalp'].forEach(x=>{
+    document.getElementById('mode-'+x)?.classList.remove('sel');
+  });
+  document.getElementById('mode-'+m)?.classList.add('sel');
+  STATE.strategy.mode=m;
+  updateModeExtraParams();
+  updateStratSummary();
+}
+
+function updateModeExtraParams() {
+  const el2=document.getElementById('mode-extra-params');
+  const m=STATE.strategy.mode;
+  if(m==='dca'){
+    el2.innerHTML=`<hr><div class="card-title">DCA Settings</div><div class="g2"><div class="field"><label>Buy Amount ($)</label><input type="number" value="${STATE.strategy.dcaAmount}" id="dca-amt" oninput="STATE.strategy.dcaAmount=+this.value;updateStratSummary()"></div><div class="field"><label>Interval (minutes)</label><input type="number" value="${STATE.strategy.dcaInterval}" id="dca-int" oninput="STATE.strategy.dcaInterval=+this.value;updateStratSummary()"></div></div>`;
+  } else if(m==='grid'){
+    el2.innerHTML=`<hr><div class="card-title">Grid Settings</div><div class="g2"><div class="field"><label>Grid Low Price ($)</label><input type="number" id="grid-lo" placeholder="e.g. 60000" oninput="STATE.strategy.gridLow=+this.value;updateStratSummary()"></div><div class="field"><label>Grid High Price ($)</label><input type="number" id="grid-hi" placeholder="e.g. 70000" oninput="STATE.strategy.gridHigh=+this.value;updateStratSummary()"></div><div class="field"><label>Number of Grid Levels</label><input type="number" value="${STATE.strategy.gridLevels}" oninput="STATE.strategy.gridLevels=+this.value;updateStratSummary()"></div></div>`;
+  } else {
+    el2.innerHTML='';
+  }
+}
+
+function selectRisk(r) {
+  document.querySelectorAll('.risk-card').forEach(c=>c.classList.remove('sel'));
+  document.querySelector(`.risk-card[data-r="${r}"]`)?.classList.add('sel');
+  const presets={1:[1,2,3,1],2:[2,4,8,2],3:[3,6,15,3],4:[5,15,20,5],5:[8,25,30,10]};
+  const [sl,tp,ps,mt]=presets[r];
+  STATE.strategy.sl=sl; STATE.strategy.tp=tp; STATE.strategy.posSize=ps; STATE.strategy.maxTrades=mt;
+  document.getElementById('sl-range').value=sl; document.getElementById('sl-val').textContent=sl+'%';
+  document.getElementById('tp-range').value=tp; document.getElementById('tp-val').textContent=tp+'%';
+  document.getElementById('ps-range').value=ps; document.getElementById('ps-val').textContent=ps+'%';
+  document.getElementById('mt-range').value=mt; document.getElementById('mt-val').textContent=mt;
+
+  const expl={
+    1:'🐢 <strong>Ultra Safe:</strong> Tiny trades (3% each), very tight 1% stop loss. Almost no single trade can hurt you much. Slowest growth. Best for money you might need back soon.',
+    2:'🌱 <strong>Conservative:</strong> 8% position sizes, 2% stop loss, 4% take profit. Low risk, steady. Good starting point for most beginners.',
+    3:'⚖️ <strong>Balanced:</strong> 15% positions, 3% SL, 6% TP. The most popular setting. Expect some losing weeks but good monthly performance if signals are right.',
+    4:'🚀 <strong>Aggressive:</strong> 20% positions, 5% SL, 15% TP. Big potential wins AND big potential losses. For experienced traders comfortable seeing their balance move 20–30% in a week.',
+    5:'🔥 <strong>Degen:</strong> Maximum exposure. Only use money you are 100% willing to lose. This is speculation, not investing.'
+  };
+  document.getElementById('risk-explain').innerHTML=expl[r];
+  updateStratSummary();
+}
+
+function updateRange(id,v) {
+  document.getElementById(id+'-val').textContent=v+(id==='mt'?'':'%');
+  STATE.strategy[id==='sl'?'sl':id==='tp'?'tp':id==='ps'?'posSize':'maxTrades']=parseFloat(v);
+  updateStratSummary();
+}
+
+function updateStratSummary() {
+  const s=STATE.strategy;
+  const el2=document.getElementById('strat-summary');
+  if(!el2) return;
+  const rows=[
+    ['Mode',s.mode.toUpperCase()],
+    ['Risk / Reward',`1 : ${(s.tp/s.sl).toFixed(1)}`],
+    ['Stop Loss',`${s.sl}%`],
+    ['Take Profit',`${s.tp}%`],
+    ['Position Size',`${s.posSize}% = $${(STATE.balance*s.posSize/100).toFixed(0)}`],
+    ['Max Open Trades',s.maxTrades],
+    ['Approval',s.approval==='auto'?'Full Auto':'Manual'],
+    ['Kill Switch',`${s.kill}% daily loss`],
+  ];
+  el2.innerHTML=rows.map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--b1);font-size:12px"><span style="color:var(--text3);font-family:var(--mono)">${k}</span><span style="font-family:var(--mono);font-weight:700">${v}</span></div>`).join('');
+}
+
+function saveStrategy() {
+  STATE.strategy.sl=parseFloat(document.getElementById('sl-range')?.value)||2;
+  STATE.strategy.tp=parseFloat(document.getElementById('tp-range')?.value)||4;
+  STATE.strategy.posSize=parseFloat(document.getElementById('ps-range')?.value)||8;
+  STATE.strategy.maxTrades=parseInt(document.getElementById('mt-range')?.value)||2;
+  STATE.strategy.pairs=document.getElementById('strat-pairs')?.value||'top5';
+  STATE.strategy.tf=document.getElementById('strat-tf')?.value||'1h';
+  STATE.strategy.kill=parseInt(document.getElementById('strat-kill')?.value)||5;
+  STATE.strategy.approval=document.getElementById('strat-approval')?.value||'manual';
+  STATE.strategy.trailing=document.getElementById('tog-trail')?.classList.contains('on')||false;
+  STATE.strategy.shorts=document.getElementById('tog-short')?.classList.contains('on')||false;
+
+  document.getElementById('strat-ai-note').innerHTML=`
+    <div class="info-box">✅ <strong>Strategy applied!</strong><br>
+    Risk/Reward ratio: 1:${(STATE.strategy.tp/STATE.strategy.sl).toFixed(1)}. 
+    You need to win ${Math.ceil(100/(1+STATE.strategy.tp/STATE.strategy.sl))}% of trades to break even.
+    ${STATE.strategy.tp/STATE.strategy.sl>=2?'✅ Good R:R ratio.':'⚠️ Low R:R — consider higher TP or lower SL.'}
+    ${STATE.strategy.approval==='manual'?'You will approve each trade manually.':'Bot will execute trades automatically.'}</div>`;
+  updateStratSummary();
+  toast('Strategy saved and applied!','ok');
+}
+
+// =====================================================
+// MODE TOGGLE
+// =====================================================
+function setMode(m) {
+  STATE.mode=m;
+  document.getElementById('mode-demo').classList.toggle('active',m==='demo');
+  document.getElementById('mode-live').classList.toggle('active',m==='live');
+
+  if (m==='live') {
+    toast('⚠️ Live mode: Connect your exchange API keys in Settings first!','warn');
+    // In live mode, fetch real prices
+    clearInterval(STATE.priceInterval);
+    STATE.priceInterval=setInterval(fetchLivePrices,15000);
+    fetchLivePrices();
+  } else {
+    clearInterval(STATE.priceInterval);
+    STATE.priceInterval=setInterval(tickPrices,2000);
+    toast('Demo mode: Using simulated prices and virtual capital.','ok');
+  }
+}
+
+// =====================================================
+// NAVIGATION
+// =====================================================
+function nav(page) {
+  document.querySelectorAll('.page').forEach(p=>{p.style.display='none'; p.classList.remove('active');});
+  document.querySelectorAll('.nav-i').forEach(n=>n.classList.remove('active'));
+
+  const pg=document.getElementById('page-'+page);
+  if (pg) {
+    if (page==='ai') {
+      pg.style.display='flex';
+      // Ensure chat has welcome if empty
+      if(!document.getElementById('chat-area').children.length) {
+        appendMsg('ai','Hello! I\'m your APEX AI Advisor. I can see your current portfolio and indicator data. Set your Gemini API key in Settings for full AI capabilities, or ask me anything — I have built-in responses for common questions too!');
+      }
+    } else {
+      pg.style.display='block';
+      pg.classList.add('active');
+    }
+  }
+
+  const titles={dashboard:'Dashboard',ai:'AI Advisor',strategies:'Strategy Builder',trades:'Live Trades',pending:'Pending Approvals',backtest:'Backtester',wallet:'Wallet',settings:'Settings',help:'Guide'};
+  document.getElementById('tb-title').textContent=titles[page]||page;
+
+  document.querySelectorAll('.nav-i').forEach(n=>{
+    if(n.textContent.trim().toLowerCase().includes(titles[page]?.toLowerCase().split(' ')[0].toLowerCase()||page)){
+      n.classList.add('active');
+    }
+  });
+  // Fix nav active
+  const navMap={dashboard:0,ai:1,strategies:2,trades:3,pending:4,backtest:5,wallet:6,settings:7,help:8};
+  const navItems=document.querySelectorAll('.nav-i');
+  navItems.forEach(n=>n.classList.remove('active'));
+  if(navMap[page]!==undefined) navItems[navMap[page]]?.classList.add('active');
+
+  if(page==='backtest') setTimeout(()=>{const c=document.getElementById('bt-chart');if(c&&c.parentElement)renderBTChart([1000],[60000],1000);},100);
+}
+
+// =====================================================
+// TABS
+// =====================================================
+function switchTab(t) {
+  const tabs={open:['tab-open','tab-open-btn'],history:['tab-history','tab-hist-btn'],performance:['tab-performance','tab-perf-btn']};
+  Object.entries(tabs).forEach(([k,[divId,btnId]])=>{
+    document.getElementById(divId).style.display=k===t?'block':'none';
+    document.getElementById(btnId)?.classList.toggle('active',k===t);
+  });
+  if(t==='performance'){updatePerformanceStats();}
+}
+
+function sTab(t) {
+  ['api','ex','notif','sec'].forEach(x=>{
+    const d=document.getElementById('stab-'+x);
+    const b=document.getElementById('stab-'+x+'-btn');
+    if(d) d.style.display=x===t?'block':'none';
+    if(b) b.classList.toggle('active',x===t);
+  });
+}
+
+function hTab(t) {
+  ['start','modes','ind','faq','gloss'].forEach(x=>{
+    const d=document.getElementById('htab-'+x);
+    const b=document.getElementById('htab-'+x+'-btn');
+    if(d) d.style.display=x===t?'block':'none';
+    if(b) b.classList.toggle('active',x===t);
+  });
+}
+
+// =====================================================
+// MODAL
+// =====================================================
+function openModal(id) { document.getElementById('modal-'+id)?.classList.add('open'); }
+function closeModal(id) { document.getElementById('modal-'+id)?.classList.remove('open'); }
+document.addEventListener('click',e=>{ if(e.target.classList.contains('overlay')) { e.target.classList.remove('open'); } });
+
+// =====================================================
+// WALLET / DEPOSIT
+// =====================================================
+function depositFunds() {
+  const amt=parseFloat(document.getElementById('dep-amount')?.value)||0;
+  if(amt<=0){toast('Enter a valid amount','err');return;}
+  STATE.balance+=amt;
+  STATE.startBalance+=amt;
+  STATE.todayStartBalance+=amt;
+  updateWalletBalance();
+  updateDashStats();
+  closeModal('deposit');
+  toast(`✅ $${amt.toFixed(2)} added to your portfolio!`,'ok');
+  // Add to txn log
+  const tbody=document.getElementById('wallet-txns');
+  if(tbody){
+    const row=document.createElement('tr');
+    row.innerHTML=`<td>Now</td><td>Deposit</td><td class="up">+$${amt.toFixed(2)}</td><td><span class="badge badge-open">CONFIRMED</span></td>`;
+    tbody.insertBefore(row,tbody.firstChild);
+  }
+}
+
+// =====================================================
+// EXPORT CSV
+// =====================================================
+function exportCSV() {
+  if(!STATE.closedTrades.length){toast('No closed trades to export','warn');return;}
+  const headers='Date,Pair,Mode,Direction,Entry,Exit,PnL($),PnL(%),Reason\n';
+  const rows=STATE.closedTrades.map(t=>
+    `${new Date(t.closedAt).toISOString()},${PAIR_LABELS[t.pair]},${t.mode},${t.dir},$${t.entry.toFixed(2)},$${t.exit.toFixed(2)},$${t.pnlDollar.toFixed(2)},${t.pnlPct.toFixed(2)}%,${t.closeReason}`
+  ).join('\n');
+  const blob=new Blob([headers+rows],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='apex-trades.csv';a.click();
+  toast('Trade history exported!','ok');
+}
+
+function clearAllData() {
+  if(confirm('Clear all data and reset? This cannot be undone.')) { localStorage.clear(); location.reload(); }
+}
+
+// =====================================================
+// TOAST
+// =====================================================
+function toast(msg,type='') {
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  const icons={ok:'✅',err:'❌',warn:'⚠️','':'ℹ️'};
+  t.innerHTML=`<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(()=>t.remove(),4500);
+}
+
+// =====================================================
+// INDICATORS TOGGLE
+// =====================================================
+function toggleIndicator(ind) {
+  if(ind==='rsi'){STATE.showRSI=!STATE.showRSI;STATE.showMACD=false;}
+  else if(ind==='macd'){STATE.showMACD=!STATE.showMACD;STATE.showRSI=false;}
+  else if(ind==='bb') STATE.showBB=!STATE.showBB;
+  renderChart();
+}
+
+function switchPair() {
+  const sel=document.getElementById('chart-pair').value;
+  STATE.currentPair=sel.replace('/','').replace('USDT','')+'USDT';
+  computeAllIndicators();
+}
+function switchTF() { STATE.currentTF=document.getElementById('chart-tf').value; computeAllIndicators(); }
+
+// =====================================================
+// HELP CONTENT
+// =====================================================
+function buildHelp() {
+  const stepsEl=document.getElementById('guide-steps');
+  if(stepsEl) stepsEl.innerHTML=[
+    ['Create Account','Sign up, set your 2FA method, and choose a strong password. Your API keys are never stored in plain text.'],
+    ['Choose Demo or Live Mode','Use Demo first — it\'s identical to Live but uses virtual money. Switch to Live only when you\'re comfortable.'],
+    ['Connect Exchange (Live only)','Settings → Exchanges → Enter your API Key and Secret. Create the key on Binance/Coinbase with Read + Trade permissions only. NEVER enable withdrawal access.'],
+    ['Deposit Funds','Demo: Click Deposit and add virtual capital. Live: Fund your exchange account directly, then APEX trades it via API.'],
+    ['Talk to AI Advisor','Go to AI Advisor. Ask in plain English: "I have $500, what strategy should I use?" The AI knows your current indicators and portfolio.'],
+    ['Configure Strategy','Go to Strategies. Pick your mode (Trend/DCA/Grid/Scalp), set risk level, and configure SL/TP. Use AI Help for a personalized review.'],
+    ['Choose Approval Mode','Manual: You approve each trade individually. Auto: Bot trades within your rules automatically. Start on Manual to learn.'],
+    ['Start the Bot','Click "Start Bot" in the top bar. Bot scans markets and either executes trades (Auto) or sends them to Pending Approvals (Manual).'],
+    ['Monitor & Adjust','Check Dashboard daily. Review win rate and P&L. If something feels wrong, click Pause Bot instantly.'],
+    ['Cash Out','Pause bot → Close all positions → Go to your exchange → Sell to USD → Withdraw to bank (1–5 days). Export CSV for tax records.'],
+  ].map(([t,d],i)=>`<div style="display:flex;gap:12px;margin-bottom:14px">
+    <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--purple));color:#000;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
+    <div><div style="font-weight:700;font-size:13px;margin-bottom:3px">${t}</div><div style="font-size:12px;color:var(--text2);line-height:1.6">${d}</div></div></div>`).join('');
+
+  const modesEl=document.getElementById('mode-guide');
+  if(modesEl) modesEl.innerHTML=`
+    <div style="margin-bottom:16px"><div style="font-weight:800;font-size:14px;margin-bottom:6px;color:var(--cyan)">📈 Trend Following</div><div style="font-size:12px;color:var(--text2);line-height:1.7">Uses EMA crossovers (EMA20 vs EMA50) combined with RSI and MACD to identify momentum trades. When the 20-period average crosses above the 50-period average AND RSI confirms momentum, it opens a LONG. Opposite for SHORT (if enabled). Best on 1h–4h timeframes. Medium trade frequency (2–8 per day per pair).</div></div>
+    <div style="margin-bottom:16px"><div style="font-weight:800;font-size:14px;margin-bottom:6px;color:var(--purple)">📦 DCA (Dollar Cost Averaging)</div><div style="font-size:12px;color:var(--text2);line-height:1.7">Buys a fixed dollar amount at regular time intervals regardless of price. Never tries to time the market. Smooths your average entry price over time. Very low stress. Set your amount (e.g. $50) and interval (e.g. every 60 minutes). Best for long-term accumulation of BTC or ETH.</div></div>
+    <div style="margin-bottom:16px"><div style="font-weight:800;font-size:14px;margin-bottom:6px;color:var(--orange)">🔲 Grid Trading</div><div style="font-size:12px;color:var(--text2);line-height:1.7">Creates a grid of buy and sell orders at fixed price intervals within a range you define (e.g. BTC $60,000–$70,000 with 10 levels = orders every $1,000). Profits from price bouncing within the range. Loses if price breaks outside your grid. Best in sideways, ranging markets.</div></div>
+    <div style="margin-bottom:16px"><div style="font-weight:800;font-size:14px;margin-bottom:6px;color:var(--green)">⚡ Scalping</div><div style="font-size:12px;color:var(--text2);line-height:1.7">Makes many small quick trades targeting 0.3–0.8% each. Uses RSI oversold/overbought at Bollinger Band extremes as entry signals. Very tight stop losses. High trade frequency. Requires low exchange fees (under 0.1%) to be profitable. Most active mode.</div></div>`;
+
+  const indEl=document.getElementById('ind-guide');
+  if(indEl) indEl.innerHTML=`
+    <div style="margin-bottom:14px"><div style="font-weight:800;font-size:14px;color:var(--cyan);margin-bottom:4px">RSI — Relative Strength Index</div><div style="font-size:12px;color:var(--text2);line-height:1.7">Measures how overbought or oversold an asset is on a scale of 0–100. <strong style="color:var(--green)">Below 30 = oversold</strong> (potential buy signal). <strong style="color:var(--red)">Above 70 = overbought</strong> (potential sell). Most reliable when combined with other signals. 14-period is standard.</div></div>
+    <div style="margin-bottom:14px"><div style="font-weight:800;font-size:14px;color:var(--cyan);margin-bottom:4px">MACD — Moving Average Convergence Divergence</div><div style="font-size:12px;color:var(--text2);line-height:1.7">Compares two exponential moving averages (12 and 26 period). When the MACD line crosses above the Signal line = bullish. Below = bearish. The histogram shows the strength of the signal. Positive and growing = strong upward momentum.</div></div>
+    <div style="margin-bottom:14px"><div style="font-weight:800;font-size:14px;color:var(--cyan);margin-bottom:4px">Bollinger Bands</div><div style="font-size:12px;color:var(--text2);line-height:1.7">Three lines: upper band, middle (20-period average), lower band. Bands widen when volatile, narrow when calm. <strong style="color:var(--green)">Price touching lower band</strong> = potentially oversold. <strong style="color:var(--red)">Price touching upper band</strong> = potentially overbought. Used by scalping mode for entries.</div></div>
+    <div style="margin-bottom:14px"><div style="font-weight:800;font-size:14px;color:var(--cyan);margin-bottom:4px">EMA — Exponential Moving Average</div><div style="font-size:12px;color:var(--text2);line-height:1.7">Weighted average price where recent prices count more. EMA20 = short-term trend. EMA50 = medium-term trend. When EMA20 crosses above EMA50 = bullish "Golden Cross." When EMA20 crosses below = bearish "Death Cross." Core signal for Trend Following mode.</div></div>`;
+
+  const faqEl=document.getElementById('faq-content');
+  if(faqEl) faqEl.innerHTML=[
+    ['Can I lose all my money?','Cryptocurrency trading involves real risk. Stop losses limit individual trade losses and the kill switch stops trading when daily limits are hit. However, extreme market events can cause gaps past your stop loss. Never trade money you cannot afford to lose. Past performance does not guarantee future results.'],
+    ['What is a stop loss?','A price level where your trade automatically closes to cap your loss. E.g. buy BTC at $60,000 with 3% SL — auto-closes at $58,200. Without it, losses could be unlimited.'],
+    ['What is take profit?','A price level where your trade auto-closes to lock in gains. E.g. 6% TP on BTC at $60,000 → closes at $63,600. The bot takes profits for you automatically.'],
+    ['Demo vs Live — what\'s different?','Demo mode uses simulated prices and virtual money. It\'s identical in every other way — same indicators, same strategy logic, same UI. Use it to test your strategy risk-free before switching to Live.'],
+    ['How do I connect my exchange?','Settings → Exchanges → Enter your API Key and Secret from Binance/Coinbase/Bybit/Kraken. Create API keys with Read + Spot Trade permissions only. Never enable withdrawal.'],
+    ['What are fees?','Most exchanges charge 0.1% per trade. Scalping with high frequency can eat into profits. Set your fee in Backtester to see real-world expected returns after fees.'],
+  ].map(([q,a])=>`<details><summary>${q}</summary><p>${a}</p></details>`).join('');
+
+  const glossEl=document.getElementById('gloss-content');
+  if(glossEl) glossEl.innerHTML=`<div class="g2">${[
+    ['Long','Buying an asset hoping price goes UP. You profit if price rises.'],
+    ['Short','Selling an asset you don\'t own, hoping price goes DOWN. You profit if price falls. Requires margin.'],
+    ['P&L','Profit & Loss. Green = you made money. Red = you lost money.'],
+    ['Stop Loss','Automatic order that closes your trade if price moves against you by X%.'],
+    ['Take Profit','Automatic order that closes your trade and locks in gains when price hits your target.'],
+    ['Drawdown','How much your portfolio dropped from its highest point. 10% drawdown = down 10% from peak.'],
+    ['Win Rate','% of your trades that were profitable. 60% WR means 6 out of 10 trades won.'],
+    ['R:R Ratio','Risk:Reward. 1:2 means you risk $1 to potentially make $2. Higher is better.'],
+    ['EMA','Exponential Moving Average. A line showing average price, weighted toward recent prices.'],
+    ['API Key','A code that lets APEX trade on your exchange on your behalf. Like a valet key — they can drive the car, not keep it.'],
+    ['DeFi','Decentralized Finance. Trading on blockchain without a central company (e.g. Uniswap).'],
+    ['USDT','Tether — a stablecoin worth $1 USD. Used as "cash" between trades in crypto.'],
+    ['Kill Switch','Emergency stop. Auto-triggers when your daily loss limit is reached. Closes all trades.'],
+    ['Backtesting','Running your strategy on historical data to see how it would have performed.'],
+  ].map(([t,d])=>`<div style="background:var(--s2);border:1px solid var(--b1);border-radius:var(--r8);padding:12px"><div style="color:var(--cyan);font-weight:700;margin-bottom:4px;font-family:var(--mono)">${t}</div><div style="font-size:11px;color:var(--text2);line-height:1.6">${d}</div></div>`).join('')}</div>`;
+}
+
+// =====================================================
+// HELPERS
+// =====================================================
+function el(id){return document.getElementById(id);}
+
+function timeSince(ts){
+  const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60) return s+'s ago';
+  if(s<3600) return Math.floor(s/60)+'m ago';
+  return Math.floor(s/3600)+'h ago';
+}
+
+// =====================================================
+// INIT
+// =====================================================
+function init() {
+  initPriceHistory();
+
+  // Load saved API key
+  if(STATE.geminiKey) el('ai-status-line').textContent=`Connected: ${STATE.geminiModel}`;
+  if(document.getElementById('gemini-key-input')) document.getElementById('gemini-key-input').value=STATE.geminiKey;
+
+  // Start price simulation
+  STATE.priceInterval = setInterval(tickPrices, 2000);
+
+  // Bot scanner loop
+  STATE.botInterval = setInterval(()=>{
+    if(STATE.botActive) checkTradeConditions();
+  }, 5000);
+
+  // Chart redraw
+  STATE.chartInterval = setInterval(()=>{
+    if(document.getElementById('page-dashboard').classList.contains('active')||
+       document.getElementById('page-dashboard').style.display!=='none') {
+      renderChart();
+    }
+  }, 3000);
+
+  // Initial renders
+  updateTicker();
+  computeAllIndicators();
+  updateDashStats();
+  updateWalletBalance();
+  updateStratSummary();
+  updateModeExtraParams();
+  buildHelp();
+
+  // Welcome
+  setTimeout(()=>toast('Welcome to APEX! Start in Demo mode — it\'s safe to experiment.','ok'),500);
+
+  // Reset today's balance at midnight
+  const msToMidnight=new Date().setHours(24,0,0,0)-Date.now();
+  setTimeout(()=>{STATE.todayStartBalance=STATE.balance;setInterval(()=>{STATE.todayStartBalance=STATE.balance;},86400000);},msToMidnight);
+}
+
+window.addEventListener('load',init);
+window.addEventListener('resize',()=>renderChart());
+</script>
+
+</body>
+</html>
